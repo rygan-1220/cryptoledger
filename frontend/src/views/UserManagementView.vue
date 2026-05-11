@@ -58,7 +58,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-text-muted uppercase mb-1">Role</label>
-                <select v-model="form.role" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+                <select v-model="form.role" :disabled="!isAdmin" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
                   <option value="employee">Employee</option>
                   <option v-if="isAdmin" value="dept_manager">Dept Manager</option>
                   <option v-if="isAdmin" value="finance_manager">Finance Manager</option>
@@ -68,7 +68,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-text-muted uppercase mb-1">Department</label>
-                <select v-model="form.dept_id" :disabled="isForcedDept" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
+                <select v-model="form.dept_id" :disabled="isForcedDept || isDeptManager" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
                   <option v-for="d in departments" :key="d.dept_id" :value="d.dept_id">{{ d.dept_name }}</option>
                 </select>
               </div>
@@ -103,6 +103,7 @@ import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
 const isAdmin = computed(() => ['admin', 'ceo'].includes(authStore.user?.role));
+const isDeptManager = computed(() => authStore.user?.role === 'dept_manager');
 const isForcedDept = computed(() => ['admin', 'ceo', 'finance_manager'].includes(form.role));
 
 const users = ref([]);
@@ -170,6 +171,8 @@ const closeModal = () => {
   generatedLink.value = '';
   form.username = '';
   form.email = '';
+  form.role = 'employee';
+  form.dept_id = authStore.user?.dept_id || '';
 };
 
 const copyLink = () => {
