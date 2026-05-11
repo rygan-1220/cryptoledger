@@ -1,16 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
-const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
 const { requireAuth } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
-
-const authLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // Limit each IP to 10 requests per `window`
-  message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' }
-});
 
 router.post(
   '/register',

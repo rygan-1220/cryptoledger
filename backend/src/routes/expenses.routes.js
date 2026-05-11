@@ -4,11 +4,13 @@ const ctrl = require('../controllers/expenses.controller');
 const { requireAuth } = require('../middleware/auth');
 const { requireRole } = require('../middleware/rbac');
 
+const { submissionLimiter } = require('../middleware/rateLimiter');
+
 const router = express.Router();
 router.use(requireAuth);
 
 // Submit expense
-router.post('/',
+router.post('/', submissionLimiter,
   [
     body('layer1_ciphertext').isObject(),
     body('pattern').isObject(),

@@ -16,9 +16,12 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const integrityRoutes = require('./routes/integrity.routes');
 const auditLogRoutes  = require('./routes/auditLogs.routes');
 
+const { apiLimiter } = require('./middleware/rateLimiter');
+
 const app = express();
 const port = process.env.PORT || 3001;
 
+app.use(apiLimiter);
 app.use(helmet());
 app.use(
   cors({
