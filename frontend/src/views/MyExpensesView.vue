@@ -38,19 +38,13 @@
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
               <td class="px-5 py-3 text-right font-medium text-text-main">${{ parseFloat(exp.amount).toFixed(2) }}</td>
               <td class="px-5 py-3 text-center">
-                <div class="flex flex-col items-center gap-1">
-                  <!-- Progress dots -->
-                  <div class="flex items-center gap-1 mb-1">
-                    <div :class="['w-2 h-2 rounded-full', exp.status !== 'rejected' ? 'bg-primary' : 'bg-red-400']"></div>
-                    <div :class="['w-4 h-0.5', ['dept_approved','approved'].includes(exp.status) ? 'bg-primary' : 'bg-gray-200']"></div>
-                    <div :class="['w-2 h-2 rounded-full', ['dept_approved','approved'].includes(exp.status) ? 'bg-primary' : 'bg-gray-200']"></div>
-                    <div :class="['w-4 h-0.5', exp.status === 'approved' ? 'bg-primary' : 'bg-gray-200']"></div>
-                    <div :class="['w-2 h-2 rounded-full', exp.status === 'approved' ? 'bg-primary' : 'bg-gray-200']"></div>
-                  </div>
-                  <span :class="statusClass(exp.status)" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight">
+                <div class="flex flex-col items-center">
+                  <span :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">
                     {{ exp.status.replace('_',' ') }}
                   </span>
-                  <p v-if="exp.rejection_reason" class="text-[10px] text-red-500 mt-1 max-w-[120px] truncate" :title="exp.rejection_reason">Reason: {{ exp.rejection_reason }}</p>
+                  <p v-if="exp.status === 'rejected'" class="text-[10px] text-red-500 mt-1 max-w-[120px] truncate" :title="exp.rejection_reason">
+                    Reason: {{ exp.rejection_reason }}
+                  </p>
                 </div>
               </td>
               <td class="px-5 py-3 text-center">

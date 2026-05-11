@@ -17,8 +17,8 @@
               <p class="text-text-muted text-sm mb-1">Expense ID</p>
               <p class="font-mono text-xs text-text-muted">{{ expense.expense_id }}</p>
             </div>
-            <span :class="statusClass(expense.status)" class="px-3 py-1 rounded-full text-sm font-medium capitalize">
-              {{ expense.status }}
+            <span :class="statusClass(expense.status)" class="px-3 py-1 rounded-full text-sm font-medium uppercase tracking-tight">
+              {{ expense.status.replace('_',' ') }}
             </span>
           </div>
           <div class="grid grid-cols-2 gap-4 mt-4">
@@ -26,6 +26,67 @@
             <div><p class="text-text-muted text-xs">Category</p><p class="text-text-main font-medium">{{ expense.category }}</p></div>
             <div><p class="text-text-muted text-xs">Project</p><p class="text-text-main">{{ expense.project_id }}</p></div>
             <div><p class="text-text-muted text-xs">Submitted</p><p class="text-text-main">{{ formatDate(expense.created_at) }}</p></div>
+          </div>
+        </div>
+
+        <!-- Progress Stepper -->
+        <div class="bg-surface border border-border rounded-xl p-6">
+          <h3 class="text-sm font-bold text-text-main mb-6 uppercase tracking-widest">Approval Progress</h3>
+          <div class="relative flex justify-between items-start max-w-xl mx-auto">
+            <!-- Background line -->
+            <div class="absolute top-5 left-0 w-full h-0.5 bg-gray-100 -z-0"></div>
+            
+            <!-- Step 1: Submission -->
+            <div class="relative z-10 flex flex-col items-center text-center w-32">
+              <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold mb-2 shadow-lg shadow-primary/20">✓</div>
+              <p class="text-xs font-bold text-text-main">Submitted</p>
+              <p class="text-[10px] text-text-muted mt-1">{{ formatDate(expense.created_at) }}</p>
+            </div>
+
+            <!-- Step 2: Dept Manager -->
+            <div class="relative z-10 flex flex-col items-center text-center w-32">
+              <div :class="[
+                'w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-500 border-2',
+                (['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 
+                (expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager' ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted')
+              ]">
+                <span v-if="['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')">✓</span>
+                <span v-else-if="expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager'">!</span>
+                <span v-else>2</span>
+              </div>
+              <p :class="['text-xs font-bold', (['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')) ? 'text-text-main' : 'text-text-muted']">Dept Review</p>
+              <p v-if="expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager'" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected by Dept</p>
+              <p v-else-if="['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Approved</p>
+            </div>
+
+            <!-- Step 3: Finance Manager -->
+            <div class="relative z-10 flex flex-col items-center text-center w-32">
+              <div :class="[
+                'w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-500 border-2',
+                expense.status === 'approved' ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 
+                (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager' ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted')
+              ]">
+                <span v-if="expense.status === 'approved'">✓</span>
+                <span v-else-if="expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager'">!</span>
+                <span v-else>3</span>
+              </div>
+              <p :class="['text-xs font-bold', expense.status === 'approved' ? 'text-text-main' : 'text-text-muted']">Finance Review</p>
+              <p v-if="expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager'" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected by Finance</p>
+              <p v-else-if="expense.status === 'approved'" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Final Approved</p>
+            </div>
+          </div>
+
+          <!-- Rejection Detail Box -->
+          <div v-if="expense.status === 'rejected'" class="mt-8 p-4 bg-red-50 border border-red-100 rounded-lg">
+            <div class="flex items-start gap-3">
+              <div class="p-1 bg-ember text-white rounded mt-0.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-ember">Rejection Reason</p>
+                <p class="text-sm text-red-700 mt-1 italic">"{{ expense.rejection_reason }}"</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -170,8 +231,9 @@ const requestSession = async () => {
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' });
 const statusClass = (s) => ({
-  pending:  'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700'
-}[s] || '');
+  pending:       'bg-yellow-100 text-yellow-700',
+  dept_approved: 'bg-blue-100 text-blue-700',
+  approved:      'bg-green-100 text-green-700',
+  rejected:      'bg-red-100 text-red-700'
+}[s] || 'bg-gray-100 text-gray-600');
 </script>

@@ -9,7 +9,7 @@ const { validationResult } = require('express-validator');
 const EXPENSE_COLS = `
   expense_id, user_id, dept_id, amount, project_id, category, status,
   file_mime_type, file_hash, digital_signature, prev_hash, hash,
-  created_at, updated_at, deleted
+  created_at, updated_at, deleted, rejection_reason, rejected_by_role
 `;
 
 function paginate(req) {
@@ -150,7 +150,8 @@ exports.getExpenseById = async (req, res) => {
     const result = await db.query(
       `SELECT expense_id, user_id, dept_id, amount, project_id, category, status,
               layer2_ciphertext, encrypted_receipt, file_mime_type, file_hash,
-              digital_signature, prev_hash, hash, created_at, updated_at, deleted
+              digital_signature, prev_hash, hash, created_at, updated_at, deleted,
+              rejection_reason, rejected_by_role
        FROM expenses WHERE expense_id=$1`, [id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
@@ -210,7 +211,8 @@ exports.getExpenseById = async (req, res) => {
         created_at:       expense.created_at,
         updated_at:       expense.updated_at,
         deleted:          expense.deleted,
-        rejection_reason: expense.rejection_reason
+        rejection_reason: expense.rejection_reason,
+        rejected_by_role: expense.rejected_by_role
       },
       layer1_ciphertext,   // for client-side Layer 1 decryption using K_real
       encrypted_receipt:   receiptData
@@ -277,8 +279,8 @@ exports.updateStatus = async (req, res) => {
     try {
       await client.query('BEGIN');
       await client.query(
-        'UPDATE expenses SET status=$1, rejection_reason=$2, updated_at=NOW() WHERE expense_id=$3',
-        [newStatus, status === 'rejected' ? reason : null, id]
+        'UPDATE expenses SET status=$1, rejection_reason=$2, rejected_by_role=$3, updated_at=NOW() WHERE expense_id=$4',
+        [newStatus, status === 'rejected' ? reason : null, status === 'rejected' ? user.role : null, id]
       );
       await logAction(client, {
         expense_id: id,
