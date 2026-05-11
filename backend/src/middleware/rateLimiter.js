@@ -4,6 +4,11 @@ const redisClient = require('../config/redis');
 
 // Base configuration for Redis-backed rate limiting
 const createLimiter = (windowMs, max, message) => {
+  // If rate limiting is explicitly disabled in .env, return a pass-through
+  if (String(process.env.ENABLE_RATE_LIMIT).toLowerCase().trim() === 'false') {
+    return (req, res, next) => next();
+  }
+
   return rateLimit({
     windowMs,
     max,

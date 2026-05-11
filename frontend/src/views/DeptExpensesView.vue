@@ -32,7 +32,7 @@
               </td>
               <td class="px-5 py-3 text-center flex gap-2 justify-center">
                 <router-link :to="`/expenses/${exp.expense_id}`" class="text-primary hover:underline text-xs">View</router-link>
-                <template v-if="exp.status === 'pending'">
+                <template v-if="exp.status === 'pending' && canApprove">
                   <button @click="updateStatus(exp.expense_id, 'approved')" class="text-green-600 hover:underline text-xs">Approve</button>
                   <button @click="updateStatus(exp.expense_id, 'rejected')" class="text-ember hover:underline text-xs">Reject</button>
                 </template>
@@ -53,10 +53,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '../stores/auth';
 import { useExpenseStore } from '../stores/expenses';
 
+const authStore = useAuthStore();
 const store    = useExpenseStore();
+
+const canApprove = computed(() => ['dept_manager', 'finance_manager'].includes(authStore.user?.role));
 const expenses = ref([]);
 const total    = ref(0);
 const page     = ref(1);

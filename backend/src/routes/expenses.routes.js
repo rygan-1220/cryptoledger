@@ -37,7 +37,7 @@ router.get('/:id', ctrl.getExpenseById);
 router.delete('/:id', ctrl.softDeleteExpense);
 
 // Approve / Reject
-router.patch('/:id/status', requireRole(['dept_manager','finance_manager']), ctrl.updateStatus);
+router.patch('/:id/status', requireRole(['dept_manager', 'finance_manager']), ctrl.updateStatus);
 
 module.exports = router;
 

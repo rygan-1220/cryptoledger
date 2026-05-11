@@ -41,8 +41,13 @@ export const loadPrivateKey = async () => {
 
 // ─── K_real Distribution ───────────────────────────────────────────────────
 export const unwrapKReal = async (wrappedKRealBase64, privateKey) => {
+  let pk = privateKey;
+  if (!pk) {
+    pk = await loadPrivateKey();
+    if (!pk) throw new Error('RSA Private key not found in device storage.');
+  }
   const encryptedBuffer = Uint8Array.from(window.atob(wrappedKRealBase64), c => c.charCodeAt(0));
-  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privateKey, encryptedBuffer);
+  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'RSA-OAEP' }, pk, encryptedBuffer);
   const kRealHex = Array.from(new Uint8Array(decryptedBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   localStorage.setItem('cryptoledger_kreal', kRealHex);
   return kRealHex;
