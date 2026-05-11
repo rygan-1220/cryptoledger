@@ -209,7 +209,8 @@ exports.getExpenseById = async (req, res) => {
         file_hash:        expense.file_hash,
         created_at:       expense.created_at,
         updated_at:       expense.updated_at,
-        deleted:          expense.deleted
+        deleted:          expense.deleted,
+        rejection_reason: expense.rejection_reason
       },
       layer1_ciphertext,   // for client-side Layer 1 decryption using K_real
       encrypted_receipt:   receiptData
@@ -246,26 +247,53 @@ exports.softDeleteExpense = async (req, res) => {
 // ─── Approve / Reject ────────────────────────────────────────────────────────
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, reason } = req.body; // status: 'approved' | 'rejected'
   const user = req.session.user;
 
-  if (!['approved','rejected'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (status === 'rejected' && !reason) return res.status(400).json({ error: 'Rejection reason is required' });
 
   try {
     const result = await db.query('SELECT dept_id, status FROM expenses WHERE expense_id=$1 AND deleted=false', [id]);
     if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
     const expense = result.rows[0];
-    if (expense.status !== 'pending') return res.status(400).json({ error: 'Only pending expenses can be updated' });
-    if (user.role === 'dept_manager' && expense.dept_id !== user.dept_id) return res.status(403).json({ error: 'Forbidden' });
+
+    let newStatus = status === 'rejected' ? 'rejected' : null;
+
+    if (user.role === 'dept_manager') {
+      if (expense.status !== 'pending') return res.status(400).json({ error: 'Dept Manager can only update pending expenses' });
+      if (expense.dept_id !== user.dept_id) return res.status(403).json({ error: 'Forbidden: Different department' });
+      if (status === 'approved') newStatus = 'dept_approved';
+    } else if (['finance_manager', 'admin', 'ceo'].includes(user.role)) {
+      if (expense.status !== 'dept_approved' && status === 'approved') {
+        return res.status(400).json({ error: 'Finance Manager can only approve dept_approved expenses' });
+      }
+      if (status === 'approved') newStatus = 'approved';
+    } else {
+      return res.status(403).json({ error: 'Forbidden: Unauthorized role' });
+    }
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      await client.query('UPDATE expenses SET status=$1, updated_at=NOW() WHERE expense_id=$2', [status, id]);
-      await logAction(client, { expense_id: id, action: status === 'approved' ? 'APPROVE' : 'REJECT', actor_id: user.user_id, metadata: {} });
+      await client.query(
+        'UPDATE expenses SET status=$1, rejection_reason=$2, updated_at=NOW() WHERE expense_id=$3',
+        [newStatus, status === 'rejected' ? reason : null, id]
+      );
+      await logAction(client, {
+        expense_id: id,
+        action: status === 'approved' ? 'APPROVE' : 'REJECT',
+        actor_id: user.user_id,
+        metadata: { from_status: expense.status, to_status: newStatus, reason: reason || null }
+      });
       await client.query('COMMIT');
-      res.json({ message: `Expense ${status}` });
-    } catch(e) { await client.query('ROLLBACK'); throw e; }
-    finally { client.release(); }
-  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
+      res.json({ message: `Expense status updated to ${newStatus}`, newStatus });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch (err) {
+    console.error('Update Status Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };

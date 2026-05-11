@@ -48,9 +48,9 @@
               </td>
               <td class="px-5 py-3 text-center flex gap-2 justify-center">
                 <router-link :to="`/expenses/${exp.expense_id}`" class="text-primary hover:underline text-xs">View</router-link>
-                <template v-if="exp.status === 'pending' && canApprove">
-                  <button @click="updateStatus(exp.expense_id,'approved')" class="text-green-600 hover:underline text-xs">Approve</button>
-                  <button @click="updateStatus(exp.expense_id,'rejected')" class="text-ember hover:underline text-xs">Reject</button>
+                <template v-if="canApprove(exp)">
+                  <button @click="handleStatus(exp.expense_id,'approved')" class="text-green-600 hover:underline text-xs">Approve</button>
+                  <button @click="handleStatus(exp.expense_id,'rejected')" class="text-ember hover:underline text-xs">Reject</button>
                 </template>
               </td>
             </tr>
@@ -76,7 +76,6 @@ import { useExpenseStore } from '../stores/expenses';
 const authStore = useAuthStore();
 const store    = useExpenseStore();
 
-const canApprove = computed(() => ['dept_manager', 'finance_manager'].includes(authStore.user?.role));
 const expenses = ref([]);
 const total    = ref(0);
 const page     = ref(1);
@@ -96,12 +95,34 @@ const fetch = async () => {
 onMounted(fetch);
 const changePage = (p) => { page.value = p; fetch(); };
 
-const updateStatus = async (id, status) => {
-  if (!confirm(`${status === 'approved' ? 'Approve' : 'Reject'} this expense?`)) return;
-  await store.updateStatus(id, status);
-  fetch();
+const canApprove = (exp) => {
+  const role = authStore.user?.role;
+  if (role === 'dept_manager') return exp.status === 'pending';
+  if (['finance_manager', 'admin', 'ceo'].includes(role)) return exp.status === 'dept_approved';
+  return false;
+};
+
+const handleStatus = async (id, status) => {
+  let reason = null;
+  if (status === 'rejected') {
+    reason = prompt('Please enter a reason for rejection:');
+    if (!reason) return;
+  } else {
+    if (!confirm('Approve this expense?')) return;
+  }
+  try {
+    await store.updateStatus(id, status, reason);
+    fetch();
+  } catch (e) {
+    alert(e);
+  }
 };
 
 const formatDate  = (d) => new Date(d).toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' });
-const statusClass = (s) => ({ pending:'bg-yellow-100 text-yellow-700', approved:'bg-green-100 text-green-700', rejected:'bg-red-100 text-red-700' }[s] || '');
+const statusClass = (s) => ({
+  pending:       'bg-yellow-100 text-yellow-700',
+  dept_approved: 'bg-blue-100 text-blue-700',
+  approved:      'bg-green-100 text-green-700',
+  rejected:      'bg-red-100 text-red-700'
+}[s] || '');
 </script>

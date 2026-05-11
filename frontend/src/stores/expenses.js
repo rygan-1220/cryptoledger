@@ -42,8 +42,8 @@ export const useExpenseStore = defineStore('expenses', {
       await api.delete(`/expenses/${id}`);
     },
 
-    async updateStatus(id, status) {
-      const res = await api.patch(`/expenses/${id}/status`, { status });
+    async updateStatus(id, status, reason = null) {
+      const res = await api.patch(`/expenses/${id}/status`, { status, reason });
       return res.data;
     }
   }
