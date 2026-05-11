@@ -1,0 +1,17 @@
+CREATE TABLE expenses (
+  expense_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES users(user_id),
+  dept_id           UUID NOT NULL REFERENCES departments(dept_id),
+  amount            FLOAT NOT NULL,
+  project_id        VARCHAR(100),
+  category          VARCHAR(100),
+  status            VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  layer2_ciphertext BYTEA NOT NULL,
+  digital_signature TEXT NOT NULL,
+  prev_hash         VARCHAR(255) NOT NULL,
+  hash              VARCHAR(255) NOT NULL,
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW(),
+  deleted           BOOLEAN DEFAULT FALSE,
+  deleted_at        TIMESTAMPTZ
+);
