@@ -70,6 +70,17 @@ const routes = [
     name: 'Integrity',
     component: () => import('../views/IntegrityView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'UserManagement',
+    component: () => import('../views/UserManagementView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/setup-account',
+    name: 'SetupAccount',
+    component: () => import('../views/SetupAccountView.vue')
   }
 ];
 

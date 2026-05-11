@@ -38,14 +38,9 @@
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
               <td class="px-5 py-3 text-right font-medium text-text-main">${{ parseFloat(exp.amount).toFixed(2) }}</td>
               <td class="px-5 py-3 text-center">
-                <div class="flex flex-col items-center">
-                  <span :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">
-                    {{ exp.status.replace('_',' ') }}
-                  </span>
-                  <p v-if="exp.status === 'rejected'" class="text-[10px] text-red-500 mt-1 max-w-[120px] truncate" :title="exp.rejection_reason">
-                    Reason: {{ exp.rejection_reason }}
-                  </p>
-                </div>
+                <span :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">
+                  {{ exp.status.replace('_',' ') }}
+                </span>
               </td>
               <td class="px-5 py-3 text-center">
                 <router-link :to="`/expenses/${exp.expense_id}`" class="text-primary hover:underline text-xs">View</router-link>

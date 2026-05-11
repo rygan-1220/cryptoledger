@@ -15,6 +15,7 @@ const sessionKeyRoutes = require('./routes/sessionKeys.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const integrityRoutes = require('./routes/integrity.routes');
 const auditLogRoutes  = require('./routes/auditLogs.routes');
+const userRoutes      = require('./routes/users.routes');
 
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -57,6 +58,7 @@ app.use('/api/expenses',     expenseRoutes);
 app.use('/api/session-keys', sessionKeyRoutes);
 app.use('/api/dashboard',    dashboardRoutes);
 app.use('/api/integrity',    integrityRoutes);
+app.use('/api/users',        userRoutes);
 app.use('/api/audit-logs',   auditLogRoutes);
 
 app.listen(port, () => {

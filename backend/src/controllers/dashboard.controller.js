@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logAction } = require('../services/auditService');
 
 // GET /api/dashboard/summary
 exports.getSummary = async (req, res) => {
@@ -97,18 +98,30 @@ exports.getMonthlyTrends = async (req, res) => {
 exports.exportReport = async (req, res) => {
   const format = req.query.format === 'csv' ? 'csv' : 'json';
   try {
-    const result = await db.query(`
-      SELECT
-        e.expense_id, e.amount, e.category, e.project_id, e.status,
-        d.dept_name,
-        TO_CHAR(e.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
-      FROM expenses e
-      JOIN departments d ON e.dept_id = d.dept_id
-      WHERE e.deleted = false
-      ORDER BY e.created_at DESC
-    `);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(`
+        SELECT
+          e.expense_id, e.amount, e.category, e.project_id, e.status,
+          d.dept_name,
+          TO_CHAR(e.created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
+        FROM expenses e
+        JOIN departments d ON e.dept_id = d.dept_id
+        WHERE e.deleted = false
+        ORDER BY e.created_at DESC
+      `);
 
-    if (format === 'csv') {
+      await logAction(client, {
+        expense_id: null,
+        action: 'EXPORT',
+        actor_id: req.session.user.user_id,
+        metadata: { format, filters: req.query }
+      });
+
+      await client.query('COMMIT');
+
+      if (format === 'csv') {
       const headers = ['expense_id','amount','category','project_id','status','dept_name','created_at'];
       const lines = [
         headers.join(','),
@@ -119,6 +132,15 @@ exports.exportReport = async (req, res) => {
       return res.send(lines.join('\n'));
     }
 
-    res.json(result.rows);
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Internal server error' }); }
+      res.json(result.rows);
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };

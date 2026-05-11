@@ -23,6 +23,7 @@
         <router-link v-if="isPrivileged" to="/admin/expenses" class="nav-link" active-class="nav-link-active">All Expenses</router-link>
         <router-link v-if="isAdminOrCEO" to="/admin/audit-logs" class="nav-link" active-class="nav-link-active">Audit Logs</router-link>
         <router-link v-if="isAdmin" to="/admin/integrity" class="nav-link" active-class="nav-link-active">Integrity</router-link>
+        <router-link v-if="canManageUsers" to="/admin/users" class="nav-link" active-class="nav-link-active">Users</router-link>
 
         <!-- Profile + role badge -->
         <span class="mx-2 h-5 w-px bg-border inline-block"></span>
@@ -49,6 +50,7 @@ const isManager   = computed(() => user.value && user.value.role === 'dept_manag
 const isPrivileged= computed(() => user.value && ['finance_manager','admin','ceo'].includes(user.value.role));
 const isAdminOrCEO= computed(() => user.value && ['admin','ceo'].includes(user.value.role));
 const isAdmin     = computed(() => user.value?.role === 'admin');
+const canManageUsers = computed(() => user.value && ['admin','ceo','dept_manager'].includes(user.value.role));
 
 const handleLogout = async () => {
   await authStore.logout();  // clears K_real only, private key stays
