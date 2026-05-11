@@ -32,7 +32,7 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { loadPrivateKey } from '../services/cryptoService';
+
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -51,13 +51,6 @@ const handleLogin = async () => {
   
   try {
     await authStore.login(form.email, form.password);
-    
-    // Check if keys are present
-    const pk = await loadPrivateKey();
-    if (!pk) {
-      alert("Warning: Private key not found in local storage. You will not be able to decrypt your expenses!");
-    }
-
     router.push('/expenses');
   } catch (err) {
     error.value = err.message || 'Login failed';
@@ -65,4 +58,5 @@ const handleLogin = async () => {
     loading.value = false;
   }
 };
+
 </script>

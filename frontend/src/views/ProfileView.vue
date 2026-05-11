@@ -82,10 +82,7 @@ const exportKey = () => {
 };
 
 const handleLogout = async () => {
-  await authStore.logout();
-  // Clear sensitive keys on logout
-  localStorage.removeItem('cryptoledger_private_key');
-  localStorage.removeItem('cryptoledger_kreal');
+  await authStore.logout();  // clears K_real only, private key stays
   router.push('/login');
 };
 </script>

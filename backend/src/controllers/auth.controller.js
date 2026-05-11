@@ -70,15 +70,30 @@ exports.login = async (req, res) => {
       dept_id: user.dept_id
     };
 
+    // Re-wrap K_real with user's public key so client can restore it after logout
+    let wrapped_kreal_for_user = null;
+    if (user.dept_id && user.public_key_pem) {
+      try {
+        const deptRes = await db.query('SELECT wrapped_kreal FROM departments WHERE dept_id = $1', [user.dept_id]);
+        if (deptRes.rows.length > 0) {
+          wrapped_kreal_for_user = keyService.wrapKRealForUser(deptRes.rows[0].wrapped_kreal, user.public_key_pem);
+        }
+      } catch (keyErr) {
+        console.warn('K_real re-wrap failed (non-fatal):', keyErr.message);
+      }
+    }
+
     res.json({
       message: 'Login successful',
-      user: req.session.user
+      user: req.session.user,
+      wrapped_kreal_for_user   // client unwraps this with their stored RSA private key
     });
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
   }
 };
+
 
 exports.logout = (req, res) => {
   req.session.destroy((err) => {
