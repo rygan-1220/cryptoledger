@@ -15,9 +15,9 @@ exports.inviteUser = async (req, res) => {
   }
 
   try {
-    // Force 'Operations' for Admin/CEO
+    // Force 'Operations' for Admin/CEO/Finance Manager
     let finalDeptId = dept_id;
-    if (['admin', 'ceo'].includes(role)) {
+    if (['admin', 'ceo', 'finance_manager'].includes(role)) {
       const opsDept = await db.query('SELECT dept_id FROM departments WHERE dept_name ILIKE $1', ['Operations']);
       if (opsDept.rows.length) {
         finalDeptId = opsDept.rows[0].dept_id;

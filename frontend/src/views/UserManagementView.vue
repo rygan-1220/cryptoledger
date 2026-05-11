@@ -103,7 +103,7 @@ import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
 const isAdmin = computed(() => ['admin', 'ceo'].includes(authStore.user?.role));
-const isForcedDept = computed(() => ['admin', 'ceo'].includes(form.role));
+const isForcedDept = computed(() => ['admin', 'ceo', 'finance_manager'].includes(form.role));
 
 const users = ref([]);
 const departments = ref([]);
@@ -119,9 +119,9 @@ const form = reactive({
   dept_id: ''
 });
 
-// Force 'Operations' for Admin/CEO roles
+// Force 'Operations' for Admin/CEO/Finance Manager roles
 watch(() => form.role, (newRole) => {
-  if (['admin', 'ceo'].includes(newRole)) {
+  if (['admin', 'ceo', 'finance_manager'].includes(newRole)) {
     const ops = departments.value.find(d => d.dept_name.toLowerCase() === 'operations');
     if (ops) form.dept_id = ops.dept_id;
   }
