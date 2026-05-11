@@ -58,7 +58,7 @@ const handleLogin = async () => {
       alert("Warning: Private key not found in local storage. You will not be able to decrypt your expenses!");
     }
 
-    router.push('/profile'); // temporary redirect
+    router.push('/expenses');
   } catch (err) {
     error.value = err.message || 'Login failed';
   } finally {

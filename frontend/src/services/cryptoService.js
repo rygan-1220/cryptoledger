@@ -48,6 +48,38 @@ export const unwrapKReal = async (wrappedKRealBase64, privateKey) => {
   return kRealHex;
 };
 
+// ─── Layer 1: Decrypt metadata ─────────────────────────────────────────────
+export const decryptLayer1 = async (layer1Ciphertext, kRealHex) => {
+  const key = await importKReal(kRealHex);
+  const iv       = Uint8Array.from(window.atob(layer1Ciphertext.iv),        c => c.charCodeAt(0));
+  const authTag  = Uint8Array.from(window.atob(layer1Ciphertext.authTag),   c => c.charCodeAt(0));
+  const ct       = Uint8Array.from(window.atob(layer1Ciphertext.ciphertext),c => c.charCodeAt(0));
+
+  // WebCrypto expects ciphertext + authTag concatenated
+  const combined = new Uint8Array(ct.length + authTag.length);
+  combined.set(ct);
+  combined.set(authTag, ct.length);
+
+  const decrypted = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, combined);
+  return JSON.parse(new TextDecoder().decode(decrypted));
+};
+
+// ─── Receipt: Decrypt encrypted receipt → Blob ───────────────────────────
+export const decryptReceiptFile = async (encReceipt, kRealHex) => {
+  const key = await importKReal(kRealHex);
+  const iv      = Uint8Array.from(window.atob(encReceipt.iv),       c => c.charCodeAt(0));
+  const authTag = Uint8Array.from(window.atob(encReceipt.authTag),  c => c.charCodeAt(0));
+  const ct      = Uint8Array.from(window.atob(encReceipt.ciphertext),c => c.charCodeAt(0));
+
+  const combined = new Uint8Array(ct.length + authTag.length);
+  combined.set(ct);
+  combined.set(authTag, ct.length);
+
+  const decrypted = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, combined);
+  return new Blob([decrypted], { type: encReceipt.mime_type || 'application/octet-stream' });
+};
+
+
 // ─── Layer 1: Encrypt metadata (vendor_name + description) ─────────────────
 export const encryptLayer1 = async (plaintextObj, kRealHex) => {
   const key = await importKReal(kRealHex);
@@ -63,6 +95,7 @@ export const encryptLayer1 = async (plaintextObj, kRealHex) => {
     ciphertext: bufferToBase64(bytes.slice(0, -16))   // everything before
   };
 };
+
 
 // ─── Receipt: Encrypt raw file ArrayBuffer with K_real ─────────────────────
 // Returns { iv, authTag, ciphertext } all base64, plus mime_type

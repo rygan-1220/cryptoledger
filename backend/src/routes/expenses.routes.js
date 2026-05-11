@@ -1,23 +1,41 @@
 const express = require('express');
 const { body } = require('express-validator');
-const expensesController = require('../controllers/expenses.controller');
+const ctrl = require('../controllers/expenses.controller');
 const { requireAuth } = require('../middleware/auth');
+const { requireRole } = require('../middleware/rbac');
 
 const router = express.Router();
-
-// All expense routes require authentication
 router.use(requireAuth);
 
-router.post(
-  '/',
+// Submit expense
+router.post('/',
   [
-    body('layer1_ciphertext').isObject().withMessage('Layer 1 ciphertext is required'),
-    body('pattern').isObject().withMessage('Pattern object is required'),
+    body('layer1_ciphertext').isObject(),
+    body('pattern').isObject(),
     body('pattern.amount').isNumeric(),
     body('pattern.dept_id').isUUID(),
-    body('digital_signature').notEmpty().withMessage('Digital signature is required')
+    body('digital_signature').notEmpty()
   ],
-  expensesController.submitExpense
+  ctrl.submitExpense
 );
 
+// My expenses (employee)
+router.get('/', ctrl.getMyExpenses);
+
+// Department expenses (manager+)
+router.get('/department', requireRole(['dept_manager','finance_manager','admin','ceo']), ctrl.getDeptExpenses);
+
+// All expenses (finance/admin/ceo)
+router.get('/all', requireRole(['finance_manager','admin','ceo']), ctrl.getAllExpenses);
+
+// Single expense detail (server decrypts layer 2, returns layer1_ciphertext to client)
+router.get('/:id', ctrl.getExpenseById);
+
+// Soft delete (owner, pending only)
+router.delete('/:id', ctrl.softDeleteExpense);
+
+// Approve / Reject
+router.patch('/:id/status', requireRole(['dept_manager','finance_manager']), ctrl.updateStatus);
+
 module.exports = router;
+

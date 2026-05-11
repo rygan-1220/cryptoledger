@@ -1,22 +1,66 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import LoginView from '../views/LoginView.vue';
+import LoginView    from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 
 const routes = [
-  { path: '/', redirect: '/login' },
-  { path: '/login', name: 'Login', component: LoginView },
+  { path: '/', redirect: '/expenses' },
+  { path: '/login',    name: 'Login',    component: LoginView },
   { path: '/register', name: 'Register', component: RegisterView },
+
+  // Employee
   {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('../views/ProfileView.vue'),
+    path: '/expenses',
+    name: 'MyExpenses',
+    component: () => import('../views/MyExpensesView.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/expenses/new',
     name: 'SubmitExpense',
     component: () => import('../views/SubmitExpenseView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/expenses/:id',
+    name: 'ExpenseDetail',
+    component: () => import('../views/ExpenseDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+
+  // Profile
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/ProfileView.vue'),
+    meta: { requiresAuth: true }
+  },
+
+  // Department Manager
+  {
+    path: '/department/expenses',
+    name: 'DeptExpenses',
+    component: () => import('../views/DeptExpensesView.vue'),
+    meta: { requiresAuth: true }
+  },
+
+  // Finance / Admin / CEO
+  {
+    path: '/admin/expenses',
+    name: 'AllExpenses',
+    component: () => import('../views/AllExpensesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/audit-logs',
+    name: 'AuditLogs',
+    component: () => import('../views/AuditLogsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/integrity',
+    name: 'Integrity',
+    component: () => import('../views/IntegrityView.vue'),
     meta: { requiresAuth: true }
   }
 ];
@@ -26,19 +70,12 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore();
-  
-  // Try to fetch user if not loaded (e.g. on page refresh)
-  if (!authStore.user) {
-    await authStore.fetchMe();
-  }
+  if (!authStore.user) await authStore.fetchMe();
 
-  if (to.meta.requiresAuth && !authStore.user) {
-    return '/login';
-  } else if ((to.name === 'Login' || to.name === 'Register') && authStore.user) {
-    return '/profile';
-  }
+  if (to.meta.requiresAuth && !authStore.user) return '/login';
+  if ((to.name === 'Login' || to.name === 'Register') && authStore.user) return '/expenses';
 });
 
 export default router;
