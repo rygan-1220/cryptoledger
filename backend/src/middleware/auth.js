@@ -1,3 +1,11 @@
-module.exports = function auth(req, res, next) {
-  return res.status(501).json({ error: "Not implemented", code: "NOT_IMPLEMENTED" });
+const requireAuth = (req, res, next) => {
+  if (req.session && req.session.user) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
+  }
+};
+
+module.exports = {
+  requireAuth
 };

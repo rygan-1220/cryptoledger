@@ -9,6 +9,8 @@ yarn.lock
 .env.*.local
 config.js
 
+dev_note.md
+
 # IDE and Editor
 .vscode/
 .idea/

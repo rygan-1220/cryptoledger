@@ -4,6 +4,12 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const session = require("express-session");
+const RedisStore = require("connect-redis").default;
+const redisClient = require("./config/redis");
+
+const authRoutes = require("./routes/auth.routes");
+const departmentRoutes = require("./routes/departments.routes");
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -19,9 +25,26 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(morgan("dev"));
 
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET || "your_session_secret_here_min_32_chars",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 // 1 hour
+    }
+  })
+);
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
+
+app.use("/api/auth", authRoutes);
+app.use("/api/departments", departmentRoutes);
 
 app.listen(port, () => {
   console.log(`CryptoLedger API listening on ${port}`);
