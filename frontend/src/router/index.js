@@ -36,6 +36,14 @@ const routes = [
     meta: { requiresAuth: true }
   },
 
+  // Privileged
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
+
   // Department Manager
   {
     path: '/department/expenses',

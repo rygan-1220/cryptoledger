@@ -19,6 +19,7 @@
         <router-link v-if="isManager" to="/department/expenses" class="nav-link" active-class="nav-link-active">Dept Expenses</router-link>
 
         <!-- Finance / Admin / CEO -->
+        <router-link v-if="isPrivileged" to="/dashboard" class="nav-link" active-class="nav-link-active">Dashboard</router-link>
         <router-link v-if="isPrivileged" to="/admin/expenses" class="nav-link" active-class="nav-link-active">All Expenses</router-link>
         <router-link v-if="isAdminOrCEO" to="/admin/audit-logs" class="nav-link" active-class="nav-link-active">Audit Logs</router-link>
         <router-link v-if="isAdmin" to="/admin/integrity" class="nav-link" active-class="nav-link-active">Integrity</router-link>
