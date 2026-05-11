@@ -1,7 +1,12 @@
 <template>
   <div class="min-h-screen bg-background text-text-main p-8">
     <div class="max-w-4xl mx-auto bg-surface p-8 rounded-xl shadow-md border border-border">
-      <h1 class="text-3xl font-display font-bold mb-6 text-text-main">Profile & Key Management</h1>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-display font-bold text-text-main">Profile & Key Management</h1>
+        <router-link to="/expenses/new" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-hover font-medium transition">
+          Submit Expense
+        </router-link>
+      </div>
       
       <div v-if="authStore.user" class="mb-8">
         <h2 class="text-xl font-bold mb-3">User Details</h2>
