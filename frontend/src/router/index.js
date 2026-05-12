@@ -5,6 +5,7 @@ import RegisterView from '../views/RegisterView.vue';
 
 const routes = [
   { path: '/', redirect: '/expenses' },
+  { path: '/setup',    name: 'Setup',    component: () => import('../views/SetupView.vue') },
   { path: '/login',    name: 'Login',    component: LoginView },
   { path: '/register', name: 'Register', component: RegisterView },
 
@@ -91,10 +92,12 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
-  if (!authStore.user) await authStore.fetchMe();
+  if (!authStore.user) {
+    await authStore.fetchMe();
+  }
 
   if (to.meta.requiresAuth && !authStore.user) return '/login';
-  if ((to.name === 'Login' || to.name === 'Register') && authStore.user) return '/expenses';
+  if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Setup') && authStore.user) return '/expenses';
 });
 
 export default router;

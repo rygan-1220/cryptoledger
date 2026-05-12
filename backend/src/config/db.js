@@ -1,14 +1,32 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+let pool = null;
 
-pool.on('error', (err) => {
-  console.error('Unexpected idle client error', err);
-  process.exit(-1);
-});
+function initPool(connectionString) {
+  if (pool) {
+    pool.end();
+  }
+  pool = new Pool({ connectionString });
+  pool.on('error', (err) => {
+    console.error('Unexpected idle client error', err);
+  });
+}
+
+// Initialize with current env if available
+if (process.env.DATABASE_URL) {
+  initPool(process.env.DATABASE_URL);
+}
 
 module.exports = {
-  query:     (text, params) => pool.query(text, params),
-  connect:   ()             => pool.connect(),   // returns a client for transactions
+  query: (text, params) => {
+    if (!pool) throw new Error('Database pool not initialized');
+    return pool.query(text, params);
+  },
+  connect: () => {
+    if (!pool) throw new Error('Database pool not initialized');
+    return pool.connect();
+  },
+  initPool,
+  getPool: () => pool
 };

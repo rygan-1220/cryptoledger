@@ -16,17 +16,22 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const integrityRoutes = require('./routes/integrity.routes');
 const auditLogRoutes  = require('./routes/auditLogs.routes');
 const userRoutes      = require('./routes/users.routes');
+const setupRoutes     = require('./routes/setup.routes');
 
 const { apiLimiter } = require('./middleware/rateLimiter');
+
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(apiLimiter);
+if (process.env.K_SYSTEM) {
+  app.use(apiLimiter);
+}
+
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN,
+    origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
     credentials: true
   })
 );
@@ -52,7 +57,28 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+// ─── Setup Guard ─────────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  // Allow all /api/setup routes regardless of initialization status
+  if (req.path.startsWith('/api/setup')) {
+    return next();
+  }
+  
+  // If no K_SYSTEM, the system needs onboarding
+  if (!process.env.K_SYSTEM) {
+    return res.status(503).json({ 
+      error: 'System requires initialization.', 
+      requires_setup: true 
+    });
+  }
+  
+  next();
+});
+
+// ─── API Routes ──────────────────────────────────────────────────────────────
+app.use('/api/setup',        setupRoutes);
 app.use('/api/auth',         authRoutes);
+
 app.use('/api/departments',  departmentRoutes);
 app.use('/api/expenses',     expenseRoutes);
 app.use('/api/session-keys', sessionKeyRoutes);
