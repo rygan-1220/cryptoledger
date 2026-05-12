@@ -27,7 +27,7 @@ exports.getStatus = (req, res) => {
 };
 
 exports.ignite = async (req, res) => {
-  const { companyName, workspaceId, adminName, adminEmail, password, departments, rsaPublicKey, dbUrl, redisUrl } = req.body;
+  const { companyName, workspaceId, adminName, adminEmail, password, departments, rsaPublicKey, dbUrl, redisUrl, sessionTtl, enableRateLimit } = req.body;
 
   try {
     // 1. Initialize DB and Redis temporarily
@@ -131,19 +131,22 @@ exports.ignite = async (req, res) => {
       client.release();
     }
 
-    // 9. Write to .env
+    // Convert ms -> seconds for express-session, with fallback
+    const sessionTtlSeconds = sessionTtl ? Math.floor(sessionTtl / 1000) : 3600;
+    const rateLimitEnabled = enableRateLimit !== false;
     const envPath = path.join(__dirname, '../../.env');
+
     const envContent = `PORT=3001
 DATABASE_URL=${dbUrl}
 REDIS_URL=${redisUrl}
 SESSION_SECRET=${crypto.randomBytes(32).toString('base64')}
-SESSION_TTL=900
+SESSION_TTL=${sessionTtlSeconds}
 SESSION_REMEMBER_TTL=604800
 K_SYSTEM=${process.env.K_SYSTEM}
-K_SESSION_TTL=3600
+K_SESSION_TTL=${sessionTtlSeconds}
 FRONTEND_ORIGIN=http://localhost:5173
 NODE_ENV=development
-ENABLE_RATE_LIMIT=true
+ENABLE_RATE_LIMIT=${rateLimitEnabled}
 `;
     fs.writeFileSync(envPath, envContent);
 

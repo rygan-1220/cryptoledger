@@ -10,7 +10,7 @@
         
         <!-- Progress Bar -->
         <div class="flex h-1 bg-gray-100">
-          <div :style="{ width: ((step / 5) * 100) + '%' }" class="bg-primary transition-all duration-500"></div>
+          <div :style="{ width: ((step / 6) * 100) + '%' }" class="bg-primary transition-all duration-500"></div>
         </div>
 
         <div class="p-8 sm:p-12">
@@ -42,12 +42,76 @@
               </div>
             </div>
             <div class="flex justify-end pt-4">
-              <button @click="nextStep" :disabled="!form.companyName || !form.workspaceId" class="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition disabled:opacity-50">Next: Departments →</button>
+              <button @click="nextStep" :disabled="!form.companyName || !form.workspaceId" class="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition disabled:opacity-50">Next: Security & Config →</button>
             </div>
           </div>
 
-          <!-- Step 2: Department Topology -->
+          <!-- Step 2: Security & Configuration -->
           <div v-if="step === 2" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div>
+              <h2 class="text-2xl font-display font-bold text-text-main">Security & Configuration</h2>
+              <p class="text-sm text-text-muted mt-1">Configure session policies and security features. Defaults are recommended.</p>
+            </div>
+
+            <div class="space-y-6">
+              <!-- Session TTL -->
+              <div class="p-5 bg-gray-50 border border-border rounded-xl space-y-3">
+                <div class="flex items-start gap-3">
+                  <div class="p-2 bg-primary/10 rounded-lg mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-bold text-sm text-text-main">Session Timeout</p>
+                    <p class="text-xs text-text-muted mt-0.5">How long a user session stays active before requiring re-login.</p>
+                  </div>
+                </div>
+                <select v-model="form.sessionTtl" class="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+                  <option value="900000">15 minutes</option>
+                  <option value="1800000">30 minutes</option>
+                  <option value="3600000">1 hour (Recommended)</option>
+                  <option value="7200000">2 hours</option>
+                  <option value="14400000">4 hours</option>
+                  <option value="86400000">24 hours</option>
+                </select>
+              </div>
+
+              <!-- Rate Limiting -->
+              <div
+                class="p-5 border rounded-xl cursor-pointer transition-all"
+                :class="form.enableRateLimit ? 'bg-primary/5 border-primary/30' : 'bg-gray-50 border-border'"
+                @click="form.enableRateLimit = !form.enableRateLimit"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-start gap-3">
+                    <div class="p-2 rounded-lg mt-0.5" :class="form.enableRateLimit ? 'bg-primary/10' : 'bg-gray-200'">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" :class="form.enableRateLimit ? 'text-primary' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="font-bold text-sm text-text-main">Enable Rate Limiting</p>
+                      <p class="text-xs text-text-muted mt-0.5">Protect API endpoints from brute-force and abuse. Strongly recommended for production.</p>
+                    </div>
+                  </div>
+                  <!-- Toggle Switch -->
+                  <div class="relative shrink-0 ml-4">
+                    <div class="w-11 h-6 rounded-full transition-colors" :class="form.enableRateLimit ? 'bg-primary' : 'bg-gray-300'"></div>
+                    <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform" :class="form.enableRateLimit ? 'translate-x-5' : 'translate-x-0'"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between pt-4">
+              <button @click="prevStep" class="text-text-muted hover:text-text-main px-4 py-2 font-medium">← Back</button>
+              <button @click="nextStep" class="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition">Next: Departments →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Department Topology -->
+          <div v-if="step === 3" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div>
               <h2 class="text-2xl font-display font-bold text-text-main">Department Topology</h2>
               <p class="text-sm text-text-muted mt-1">Define the departments in your organization. 'Operations' is mandatory for System Admin.</p>
@@ -78,8 +142,8 @@
             </div>
           </div>
 
-          <!-- Step 3: Genesis Managers -->
-          <div v-if="step === 3" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+          <!-- Step 4: Genesis Managers -->
+          <div v-if="step === 4" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div>
               <h2 class="text-2xl font-display font-bold text-text-main">Genesis Managers</h2>
               <p class="text-sm text-text-muted mt-1">Assign an initial manager for each department. They will receive an invitation link.</p>
@@ -111,8 +175,8 @@
             </div>
           </div>
 
-          <!-- Step 4: Genesis Admin -->
-          <div v-if="step === 4" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+          <!-- Step 5: Genesis Admin -->
+          <div v-if="step === 5" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div>
               <h2 class="text-2xl font-display font-bold text-text-main">Genesis Admin</h2>
               <p class="text-sm text-text-muted mt-1">Create the master administrator account. This account holds the root keys.</p>
@@ -139,8 +203,8 @@
             </div>
           </div>
 
-          <!-- Step 5: The Ignition -->
-          <div v-if="step === 5" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+          <!-- Step 6: The Ignition -->
+          <div v-if="step === 6" class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div v-if="!ignitionComplete">
               <h2 class="text-2xl font-display font-bold text-text-main mb-2">Ready for Ignition</h2>
               <p class="text-sm text-text-muted mb-6">Review your configuration. Click Ignite to generate all cryptographic keys and initialize the system.</p>
@@ -149,6 +213,8 @@
                 <p><strong>Organization:</strong> {{ form.companyName }} ({{ form.workspaceId }})</p>
                 <p><strong>Departments:</strong> Operations, {{ form.departments.join(', ') }}</p>
                 <p><strong>Admin:</strong> {{ form.adminName }} ({{ form.adminEmail }})</p>
+                <p><strong>Session Timeout:</strong> {{ sessionTtlLabel }}</p>
+                <p><strong>Rate Limiting:</strong> {{ form.enableRateLimit ? 'Enabled' : 'Disabled' }}</p>
               </div>
 
               <div v-if="error" class="text-ember text-sm mb-4 bg-red-50 p-3 rounded-lg border border-red-100">{{ error }}</div>
@@ -234,12 +300,23 @@ const form = reactive({
   workspaceId: '',
   dbUrl: 'postgresql://cryptoledger:password@localhost:5432/cryptoledger_db',
   redisUrl: 'redis://localhost:6379',
+  sessionTtl: '3600000',
+  enableRateLimit: true,
   departments: [],
   managers: [],
   adminName: '',
   adminEmail: '',
   adminPassword: ''
 });
+
+const sessionTtlLabel = computed(() => ({
+  '900000': '15 minutes',
+  '1800000': '30 minutes',
+  '3600000': '1 hour (Recommended)',
+  '7200000': '2 hours',
+  '14400000': '4 hours',
+  '86400000': '24 hours'
+})[form.sessionTtl] || '1 hour');
 
 // Watch departments to sync managers array
 watch(() => form.departments, (newDepts) => {
@@ -254,7 +331,7 @@ const managersValid = computed(() => {
   return form.managers.every(m => m.name.trim() && m.email.trim() && m.email.includes('@'));
 });
 
-const nextStep = () => { if (step.value < 5) step.value++; };
+const nextStep = () => { if (step.value < 6) step.value++; };
 const prevStep = () => { if (step.value > 1) step.value--; };
 
 const addDept = () => { form.departments.push(''); };
@@ -287,8 +364,10 @@ const igniteSystem = async () => {
       workspaceId: form.workspaceId,
       dbUrl: form.dbUrl,
       redisUrl: form.redisUrl,
+      sessionTtl: parseInt(form.sessionTtl),
+      enableRateLimit: form.enableRateLimit,
       departments: form.departments.filter(d => d.trim() !== ''),
-      managers: form.managers, // Sent to backend to generate invites
+      managers: form.managers,
       adminName: form.adminName,
       adminEmail: form.adminEmail,
       password: form.adminPassword,
