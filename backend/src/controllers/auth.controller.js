@@ -66,6 +66,10 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials', code: 'AUTH_FAILED' });
     }
 
+    if (!user.is_active) {
+      return res.status(403).json({ error: 'Account has been deactivated', code: 'ACCOUNT_INACTIVE' });
+    }
+
     // Set session
     req.session.user = {
       user_id: user.user_id,

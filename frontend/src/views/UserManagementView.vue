@@ -11,6 +11,28 @@
         </button>
       </div>
 
+      <!-- Filters -->
+      <div class="flex gap-4 mb-6">
+        <div class="flex-1 max-w-[200px]">
+          <label class="block text-[10px] font-bold text-text-muted uppercase mb-1 ml-1">Filter Role</label>
+          <select v-model="filters.role" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+            <option value="">All Roles</option>
+            <option value="employee">Employee</option>
+            <option value="dept_manager">Dept Manager</option>
+            <option value="finance_manager">Finance Manager</option>
+            <option value="admin">Admin</option>
+            <option value="ceo">CEO</option>
+          </select>
+        </div>
+        <div class="flex-1 max-w-[200px]">
+          <label class="block text-[10px] font-bold text-text-muted uppercase mb-1 ml-1">Filter Department</label>
+          <select v-model="filters.dept" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+            <option value="">All Departments</option>
+            <option v-for="d in departments" :key="d.dept_id" :value="d.dept_name">{{ d.dept_name }}</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Users Table -->
       <div v-if="loading" class="text-text-muted text-center py-16 italic">Loading users…</div>
       <div v-else class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -21,18 +43,53 @@
               <th class="px-6 py-4 text-left">Email</th>
               <th class="px-6 py-4 text-left">Role</th>
               <th class="px-6 py-4 text-left">Department</th>
+              <th class="px-6 py-4 text-left">Status</th>
               <th class="px-6 py-4 text-left">Joined</th>
+              <th class="px-6 py-4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border">
-            <tr v-for="user in users" :key="user.user_id" class="hover:bg-gray-50/50 transition">
+            <tr v-for="user in filteredUsers" :key="user.user_id" class="hover:bg-gray-50/50 transition">
               <td class="px-6 py-4 font-medium text-text-main">{{ user.username }}</td>
               <td class="px-6 py-4 text-text-muted">{{ user.email }}</td>
               <td class="px-6 py-4">
                 <span :class="roleClass(user.role)" class="px-2 py-1 rounded text-[10px] font-bold uppercase">{{ user.role.replace('_',' ') }}</span>
               </td>
               <td class="px-6 py-4 text-text-muted">{{ user.department_name || 'N/A' }}</td>
-              <td class="px-6 py-4 text-text-muted">{{ formatDate(user.created_at) }}</td>
+              <td class="px-6 py-4">
+                <span :class="statusClass(user.status)" class="px-2 py-1 rounded-full text-[10px] font-bold uppercase">{{ user.status.replace('_', ' ') }}</span>
+              </td>
+              <td class="px-6 py-4 text-text-muted">{{ user.created_at ? formatDate(user.created_at) : '-' }}</td>
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- Activate / Deactivate Icons (Monochrome SaaS Style) -->
+                  <button 
+                    v-if="user.status !== 'pending_invite' && user.user_id !== authStore.user.user_id && canManageUser(user)"
+                    @click="toggleActive(user)"
+                    class="p-2 rounded-lg transition-colors text-text-main hover:bg-gray-100"
+                    :title="user.is_active ? 'Deactivate User' : 'Activate User'"
+                  >
+                    <svg v-if="user.is_active" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728A9 9 0 115.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+
+                  <!-- Copy Invite Link Icon (Monochrome SaaS Style) -->
+                  <button
+                    v-if="user.status === 'pending_invite' && user.invite_link"
+                    @click="copyUserInviteLink(user.invite_link)"
+                    class="p-2 rounded-lg transition-colors text-text-main hover:bg-gray-100"
+                    title="Copy Invite Link"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -113,6 +170,19 @@ const inviting = ref(false);
 const showInviteModal = ref(false);
 const generatedLink = ref('');
 
+const filters = reactive({
+  role: '',
+  dept: ''
+});
+
+const filteredUsers = computed(() => {
+  return users.value.filter(u => {
+    const matchRole = !filters.role || u.role === filters.role;
+    const matchDept = !filters.dept || u.department_name === filters.dept;
+    return matchRole && matchDept;
+  });
+});
+
 const form = reactive({
   username: '',
   email: '',
@@ -138,6 +208,23 @@ const fetchUsers = async () => {
     const res = await api.get('/users');
     users.value = res.data;
   } catch (e) { console.error(e); }
+};
+
+const toggleActive = async (user) => {
+  try {
+    const newStatus = !user.is_active;
+    await api.patch(`/users/${user.user_id}/status`, { is_active: newStatus });
+    user.is_active = newStatus;
+    user.status = newStatus ? 'active' : 'inactive';
+  } catch (e) {
+    alert(e.response?.data?.error || 'Failed to update user status');
+  }
+};
+
+const canManageUser = (user) => {
+  if (isAdmin.value) return true;
+  if (isDeptManager.value && user.department_name === authStore.user.dept_name && user.role === 'employee') return true;
+  return false;
 };
 
 const fetchDepts = async () => {
@@ -180,6 +267,11 @@ const copyLink = () => {
   alert('Link copied to clipboard!');
 };
 
+const copyUserInviteLink = (link) => {
+  navigator.clipboard.writeText(link);
+  alert('Invite link copied to clipboard!');
+};
+
 const roleClass = (r) => ({
   admin: 'bg-red-100 text-red-700',
   ceo:   'bg-purple-100 text-purple-700',
@@ -187,6 +279,12 @@ const roleClass = (r) => ({
   dept_manager: 'bg-blue-100 text-blue-700',
   employee: 'bg-gray-100 text-gray-700'
 }[r] || '');
+
+const statusClass = (s) => ({
+  active: 'bg-green-100 text-green-700',
+  inactive: 'bg-red-100 text-red-700',
+  pending_invite: 'bg-yellow-100 text-yellow-700'
+}[s] || 'bg-gray-100 text-gray-700');
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' });
 </script>

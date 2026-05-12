@@ -84,7 +84,7 @@ exports.listUsers = async (req, res) => {
   const actor = req.session.user;
   try {
     let query = `
-      SELECT u.user_id, u.username, u.email, u.role, d.dept_name as department_name, u.created_at
+      SELECT u.user_id, u.username, u.email, u.role, u.is_active, d.dept_name as department_name, u.created_at
       FROM users u
       LEFT JOIN departments d ON u.dept_id = d.dept_id
     `;
@@ -98,9 +98,82 @@ exports.listUsers = async (req, res) => {
     query += ' ORDER BY u.created_at DESC';
 
     const result = await db.query(query, params);
-    res.json(result.rows);
+    const users = result.rows.map(u => ({
+      ...u,
+      status: u.is_active ? 'active' : 'inactive'
+    }));
+
+    // Fetch pending invites from Redis
+    const keys = await redisClient.keys('invite:*');
+    if (keys && keys.length > 0) {
+      const invitesStr = await redisClient.mget(...keys);
+      for (let i = 0; i < keys.length; i++) {
+        const inviteStr = invitesStr[i];
+        if (!inviteStr) continue;
+        const invite = JSON.parse(inviteStr);
+        
+        // Filter out invites not belonging to dept_manager's department
+        if (actor.role === 'dept_manager' && invite.dept_id !== actor.dept_id) continue;
+
+        // Fetch department name for the invite
+        let deptName = 'Unknown';
+        if (invite.dept_id) {
+          const deptRes = await db.query('SELECT dept_name FROM departments WHERE dept_id = $1', [invite.dept_id]);
+          if (deptRes.rows.length > 0) deptName = deptRes.rows[0].dept_name;
+        }
+
+        users.push({
+          user_id: `pending-${crypto.randomUUID()}`, // dummy ID for the list
+          username: invite.username,
+          email: invite.email,
+          role: invite.role,
+          department_name: deptName,
+          status: 'pending_invite',
+          created_at: null,
+          is_active: false,
+          invite_link: `${process.env.FRONTEND_ORIGIN || 'http://localhost:5173'}/setup-account?token=${keys[i].replace('invite:', '')}`
+        });
+      }
+    }
+
+    res.json(users);
   } catch (err) {
     console.error('List Users Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Toggle Active Status
+exports.toggleActive = async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+  const actor = req.session.user;
+
+  try {
+    const userRes = await db.query('SELECT dept_id, role FROM users WHERE user_id = $1', [id]);
+    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    const targetUser = userRes.rows[0];
+
+    // Dept Managers can only toggle employees in their department
+    if (actor.role === 'dept_manager') {
+      if (targetUser.dept_id !== actor.dept_id) {
+        return res.status(403).json({ error: 'Cannot modify user from another department' });
+      }
+      if (targetUser.role !== 'employee') {
+        return res.status(403).json({ error: 'Dept Managers can only modify employees' });
+      }
+    }
+
+    // Admins cannot deactivate themselves
+    if (id === actor.user_id && is_active === false) {
+      return res.status(400).json({ error: 'Cannot deactivate your own account' });
+    }
+
+    await db.query('UPDATE users SET is_active = $1 WHERE user_id = $2', [is_active, id]);
+    res.json({ message: `User account has been ${is_active ? 'activated' : 'deactivated'}` });
+  } catch (err) {
+    console.error('Toggle Active Error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
