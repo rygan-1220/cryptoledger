@@ -51,6 +51,7 @@ exports.ignite = async (req, res) => {
     let recoveryPhrase = null;
     let invites = [];
 
+    const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
     try {
       await client.query('BEGIN');
 
@@ -115,7 +116,7 @@ exports.ignite = async (req, res) => {
 
           await redisClient.initRedis(redisUrl).set(`invite:${token}`, JSON.stringify(invitation), 'EX', 7 * 24 * 60 * 60);
 
-          const inviteLink = `${process.env.FRONTEND_ORIGIN || 'http://localhost:5173'}/setup-account?token=${token}`;
+          const inviteLink = `${frontendOrigin}/setup-account?token=${token}`;
           invites.push({ deptName: dept.deptName, email: mgr.email, link: inviteLink });
         }
       }
@@ -134,6 +135,7 @@ exports.ignite = async (req, res) => {
     // Set in memory for current process
     process.env.COMPANY_NAME = companyName || 'CryptoLedger';
     process.env.WORKSPACE_ID = workspaceId || 'default';
+    process.env.FRONTEND_ORIGIN = 'http://localhost:5173'; // Default for dev setup
 
     // Convert ms -> seconds for express-session, with fallback
     const sessionTtlSeconds = sessionTtl ? Math.floor(sessionTtl / 1000) : 3600;

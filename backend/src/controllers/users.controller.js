@@ -35,7 +35,7 @@ exports.inviteUser = async (req, res) => {
     // Store in Redis (7 days)
     await redisClient.set(`invite:${token}`, JSON.stringify(invitation), 'EX', 7 * 24 * 60 * 60);
 
-    const inviteLink = `${process.env.FRONTEND_ORIGIN}/setup-account?token=${token}`;
+    const inviteLink = `${process.env.FRONTEND_ORIGIN || 'http://localhost:5173'}/setup-account?token=${token}`;
     res.json({ message: 'Invitation created', inviteLink, token });
   } catch (err) {
     console.error('Invite Error:', err);
