@@ -79,6 +79,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/admin/departments',
+    name: 'DepartmentManagement',
+    component: () => import('../views/DepartmentManagementView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/setup-account',
     name: 'SetupAccount',
     component: () => import('../views/SetupAccountView.vue')

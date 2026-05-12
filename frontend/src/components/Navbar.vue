@@ -24,6 +24,7 @@
         <router-link v-if="isAdminOrCEO" to="/admin/audit-logs" class="nav-link" active-class="nav-link-active">Audit Logs</router-link>
         <router-link v-if="isAdmin" to="/admin/integrity" class="nav-link" active-class="nav-link-active">Integrity</router-link>
         <router-link v-if="canManageUsers" to="/admin/users" class="nav-link" active-class="nav-link-active">Users</router-link>
+        <router-link v-if="isAdminOrCEO" to="/admin/departments" class="nav-link" active-class="nav-link-active">Departments</router-link>
 
         <!-- Profile + role badge -->
         <span class="mx-2 h-5 w-px bg-border inline-block"></span>
