@@ -1,7 +1,7 @@
 CREATE TABLE expense_audit_log (
   log_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   expense_id  UUID REFERENCES expenses(expense_id),
-  action      VARCHAR(50) NOT NULL CHECK (action IN ('CREATE','APPROVE','REJECT','VIEW_PLAINTEXT','DELETE','VERIFY')),
+  action      VARCHAR(50) NOT NULL CHECK (action IN ('CREATE','APPROVE','REJECT','VIEW_PLAINTEXT','DELETE','VERIFY','EXPORT')),
   actor_id    UUID NOT NULL REFERENCES users(user_id),
   timestamp   TIMESTAMPTZ DEFAULT NOW(),
   metadata    JSONB,

@@ -12,7 +12,7 @@ router.post('/setup-account', ctrl.setupAccount);
 // Protected: Management
 router.use(requireAuth);
 
-router.get('/', requireRole(['admin', 'ceo']), ctrl.listUsers);
+router.get('/', requireRole(['admin', 'ceo', 'dept_manager']), ctrl.listUsers);
 router.post('/invite', requireRole(['admin', 'ceo', 'dept_manager']), ctrl.inviteUser);
 
 module.exports = router;

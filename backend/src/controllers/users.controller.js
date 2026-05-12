@@ -81,15 +81,26 @@ exports.setupAccount = async (req, res) => {
 
 // List Users
 exports.listUsers = async (req, res) => {
+  const actor = req.session.user;
   try {
-    const result = await db.query(`
+    let query = `
       SELECT u.user_id, u.username, u.email, u.role, d.dept_name as department_name, u.created_at
       FROM users u
       LEFT JOIN departments d ON u.dept_id = d.dept_id
-      ORDER BY u.created_at DESC
-    `);
+    `;
+    const params = [];
+
+    if (actor.role === 'dept_manager') {
+      query += ' WHERE u.dept_id = $1';
+      params.push(actor.dept_id);
+    }
+
+    query += ' ORDER BY u.created_at DESC';
+
+    const result = await db.query(query, params);
     res.json(result.rows);
   } catch (err) {
+    console.error('List Users Error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
