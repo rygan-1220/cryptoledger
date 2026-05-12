@@ -39,6 +39,26 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 app.use(morgan("dev"));
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
+// ─── Setup Guard ─────────────────────────────────────────────────────────────
+// Mount setup routes FIRST, before the guard, so they are always accessible
+app.use('/api/setup', setupRoutes);
+
+app.use((req, res, next) => {
+  // If no K_SYSTEM, the system needs onboarding — block everything except /api/setup
+  if (!process.env.K_SYSTEM) {
+    return res.status(503).json({ 
+      error: 'System requires initialization.', 
+      requires_setup: true 
+    });
+  }
+  next();
+});
+
+// ─── Session Middleware (Only active after setup check) ──────────────────────
 app.use(
   session({
     store: new RedisStore({ client: redisClient }),
@@ -53,30 +73,7 @@ app.use(
   })
 );
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
-});
-
-// ─── Setup Guard ─────────────────────────────────────────────────────────────
-app.use((req, res, next) => {
-  // Allow all /api/setup routes regardless of initialization status
-  if (req.path.startsWith('/api/setup')) {
-    return next();
-  }
-  
-  // If no K_SYSTEM, the system needs onboarding
-  if (!process.env.K_SYSTEM) {
-    return res.status(503).json({ 
-      error: 'System requires initialization.', 
-      requires_setup: true 
-    });
-  }
-  
-  next();
-});
-
 // ─── API Routes ──────────────────────────────────────────────────────────────
-app.use('/api/setup',        setupRoutes);
 app.use('/api/auth',         authRoutes);
 
 app.use('/api/departments',  departmentRoutes);

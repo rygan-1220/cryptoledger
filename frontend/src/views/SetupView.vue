@@ -389,6 +389,9 @@ const igniteSystem = async () => {
     recoveryPhrase.value = phrase;
     managerInvites.value = invites || [];
     ignitionComplete.value = true;
+    
+    // Allow navigation away from setup now that system is ignited
+    authStore.requiresSetup = false;
   } catch (e) {
     console.error(e);
     error.value = e.response?.data?.error || e.message || 'Ignition failed. Check console.';

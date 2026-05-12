@@ -98,12 +98,41 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
+
+  // 1. If not authenticated yet, try to fetch user
   if (!authStore.user) {
-    await authStore.fetchMe();
+    try {
+      await authStore.fetchMe();
+    } catch (e) {
+      // Ignored: fetchMe sets requiresSetup = true on 503
+    }
   }
 
-  if (to.meta.requiresAuth && !authStore.user) return '/login';
-  if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Setup') && authStore.user) return '/expenses';
+  // 2. Priority check: Handle system initialization state
+  if (authStore.requiresSetup) {
+    // If not initialized, only allow Setup pages
+    if (to.name !== 'Setup' && to.name !== 'SetupAccount') {
+      return '/setup';
+    }
+  } else {
+    // If ALREADY initialized, block access to the Setup wizard
+    if (to.name === 'Setup') {
+      return '/login';
+    }
+  }
+
+  // 3. Navigation logic
+  const isAuthenticated = !!authStore.user;
+
+  // Protect routes
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return '/login';
+  }
+
+  // Redirect if already logged in
+  if (isAuthenticated && (to.name === 'Login' || to.name === 'Register' || to.name === 'Setup')) {
+    return '/expenses';
+  }
 });
 
 export default router;

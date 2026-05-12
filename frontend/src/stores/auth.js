@@ -6,7 +6,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     loading: false,
-    error: null
+    error: null,
+    requiresSetup: false
   }),
   actions: {
     async register(payload) {
@@ -65,8 +66,13 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.get('/auth/me');
         this.user = response.data.user;
+        this.requiresSetup = false;
       } catch (err) {
         this.user = null;
+        if (err.response?.status === 503) {
+          this.requiresSetup = true;
+          throw err;
+        }
       }
     }
   }
