@@ -133,13 +133,6 @@
           <p v-if="sessionError" class="text-ember text-sm mt-2">{{ sessionError }}</p>
         </div>
 
-        <!-- Audit -->
-        <div class="bg-surface border border-border rounded-xl p-6">
-          <p class="text-text-muted text-xs font-medium uppercase mb-1">Integrity Hash</p>
-          <p class="font-mono text-xs text-text-muted break-all">{{ expense.hash }}</p>
-          <p class="text-text-muted text-xs font-medium uppercase mt-3 mb-1">Prev Hash</p>
-          <p class="font-mono text-xs text-text-muted break-all">{{ expense.prev_hash }}</p>
-        </div>
       </div>
     </div>
   </div>

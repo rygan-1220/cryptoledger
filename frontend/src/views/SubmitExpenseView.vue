@@ -3,7 +3,7 @@
     <div class="max-w-2xl mx-auto bg-surface p-8 rounded-xl shadow-md border border-border">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display font-bold text-text-main">Submit Expense</h1>
-        <router-link to="/profile" class="text-primary hover:underline">Back to Profile</router-link>
+        <router-link to="/expenses" class="text-primary hover:underline">Back to My Expenses</router-link>
       </div>
       
       <form @submit.prevent="handleSubmit" class="space-y-5">

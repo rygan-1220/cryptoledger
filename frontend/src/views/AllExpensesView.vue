@@ -39,7 +39,7 @@
           <tbody class="divide-y divide-border">
             <tr v-for="exp in expenses" :key="exp.expense_id" class="hover:bg-gray-50 transition">
               <td class="px-5 py-3">{{ formatDate(exp.created_at) }}</td>
-              <td class="px-5 py-3 text-text-muted font-mono text-xs">{{ exp.dept_id.slice(0,8) }}…</td>
+              <td class="px-5 py-3 text-text-muted">{{ exp.dept_name }}</td>
               <td class="px-5 py-3">{{ exp.category }}</td>
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
               <td class="px-5 py-3 text-right font-medium">${{ parseFloat(exp.amount).toFixed(2) }}</td>

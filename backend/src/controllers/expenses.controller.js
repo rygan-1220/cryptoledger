@@ -7,9 +7,10 @@ const { validationResult } = require('express-validator');
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const EXPENSE_COLS = `
-  expense_id, user_id, dept_id, amount, project_id, category, status,
-  file_mime_type, file_hash, digital_signature, prev_hash, hash,
-  created_at, updated_at, deleted, rejection_reason, rejected_by_role
+  e.expense_id, e.user_id, e.dept_id, e.amount, e.project_id, e.category, e.status,
+  e.file_mime_type, e.file_hash, e.digital_signature, e.prev_hash, e.hash,
+  e.created_at, e.updated_at, e.deleted, e.rejection_reason, e.rejected_by_role,
+  u.username as employee_name, d.dept_name
 `;
 
 function paginate(req) {
@@ -94,7 +95,7 @@ exports.getMyExpenses = async (req, res) => {
   const { user_id } = req.session.user;
   try {
     const [data, count] = await Promise.all([
-      db.query(`SELECT ${EXPENSE_COLS} FROM expenses WHERE user_id=$1 AND deleted=false ORDER BY created_at DESC LIMIT $2 OFFSET $3`, [user_id, limit, offset]),
+      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id WHERE e.user_id=$1 AND e.deleted=false ORDER BY e.created_at DESC LIMIT $2 OFFSET $3`, [user_id, limit, offset]),
       db.query('SELECT COUNT(*) FROM expenses WHERE user_id=$1 AND deleted=false', [user_id])
     ]);
     res.json({ data: data.rows, total: parseInt(count.rows[0].count), page, limit });
@@ -108,7 +109,7 @@ exports.getDeptExpenses = async (req, res) => {
   if (!dept_id) return res.status(400).json({ error: 'No department assigned' });
   try {
     const [data, count] = await Promise.all([
-      db.query(`SELECT ${EXPENSE_COLS} FROM expenses WHERE dept_id=$1 AND deleted=false ORDER BY created_at DESC LIMIT $2 OFFSET $3`, [dept_id, limit, offset]),
+      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id WHERE e.dept_id=$1 AND e.deleted=false ORDER BY e.created_at DESC LIMIT $2 OFFSET $3`, [dept_id, limit, offset]),
       db.query('SELECT COUNT(*) FROM expenses WHERE dept_id=$1 AND deleted=false', [dept_id])
     ]);
     res.json({ data: data.rows, total: parseInt(count.rows[0].count), page, limit });
@@ -119,22 +120,24 @@ exports.getDeptExpenses = async (req, res) => {
 exports.getAllExpenses = async (req, res) => {
   const { page, limit, offset } = paginate(req);
   const { dept_id, status, category } = req.query;
-  const conditions = ['deleted=false'];
+  const conditions = ['e.deleted=false'];
   const params = [];
-  if (dept_id) { params.push(dept_id); conditions.push(`dept_id=$${params.length}`); }
-  if (status)  { params.push(status);  conditions.push(`status=$${params.length}`); }
-  if (category){ params.push(category);conditions.push(`category=$${params.length}`); }
+  if (dept_id) { params.push(dept_id); conditions.push(`e.dept_id=$${params.length}`); }
+  if (status)  { params.push(status);  conditions.push(`e.status=$${params.length}`); }
+  if (category){ params.push(category);conditions.push(`e.category=$${params.length}`); }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   params.push(limit, offset);
 
-  // Build count params (same WHERE, no limit/offset)
+  // Build count params (same WHERE but on raw table)
+  const countConditions = conditions.map(c => c.replace('e.', ''));
+  const countWhere = countConditions.length ? `WHERE ${countConditions.join(' AND ')}` : '';
   const countParams = params.slice(0, -2);
 
   try {
     const [data, count] = await Promise.all([
-      db.query(`SELECT ${EXPENSE_COLS} FROM expenses ${where} ORDER BY created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params),
-      db.query(`SELECT COUNT(*) FROM expenses ${where}`, countParams)
+      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id ${where} ORDER BY e.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params),
+      db.query(`SELECT COUNT(*) FROM expenses ${countWhere}`, countParams)
     ]);
     res.json({ data: data.rows, total: parseInt(count.rows[0].count), page, limit });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Internal server error' }); }

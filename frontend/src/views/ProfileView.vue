@@ -3,9 +3,6 @@
     <div class="max-w-4xl mx-auto bg-surface p-8 rounded-xl shadow-md border border-border">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display font-bold text-text-main">Profile & Key Management</h1>
-        <router-link to="/expenses/new" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-hover font-medium transition">
-          Submit Expense
-        </router-link>
       </div>
       
       <div v-if="authStore.user" class="mb-8">
@@ -13,6 +10,7 @@
         <div class="space-y-2">
           <p><strong>Username:</strong> <span class="text-text-muted">{{ authStore.user.username }}</span></p>
           <p><strong>Email:</strong> <span class="text-text-muted">{{ authStore.user.email }}</span></p>
+          <p><strong>Department:</strong> <span class="text-text-muted">{{ authStore.user.dept_name || 'N/A' }}</span></p>
           <p><strong>Role:</strong> <span class="uppercase text-primary font-bold">{{ authStore.user.role }}</span></p>
         </div>
       </div>

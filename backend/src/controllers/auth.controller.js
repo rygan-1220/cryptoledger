@@ -54,7 +54,12 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await db.query(`
+      SELECT u.*, d.dept_name 
+      FROM users u 
+      LEFT JOIN departments d ON u.dept_id = d.dept_id 
+      WHERE u.email = $1
+    `, [email]);
     const user = result.rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -67,7 +72,8 @@ exports.login = async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      dept_id: user.dept_id
+      dept_id: user.dept_id,
+      dept_name: user.dept_name
     };
 
     // Re-wrap K_real with user's public key so client can restore it after logout
