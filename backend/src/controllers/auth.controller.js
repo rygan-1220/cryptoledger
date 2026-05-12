@@ -96,6 +96,10 @@ exports.login = async (req, res) => {
     res.json({
       message: 'Login successful',
       user: req.session.user,
+      settings: {
+        companyName: process.env.COMPANY_NAME || 'CryptoLedger',
+        workspaceId: process.env.WORKSPACE_ID || 'default'
+      },
       wrapped_kreal_for_user   // client unwraps this with their stored RSA private key
     });
   } catch (error) {
@@ -117,7 +121,13 @@ exports.logout = (req, res) => {
 
 exports.me = (req, res) => {
   if (req.session && req.session.user) {
-    res.json({ user: req.session.user });
+    res.json({ 
+      user: req.session.user,
+      settings: {
+        companyName: process.env.COMPANY_NAME || 'CryptoLedger',
+        workspaceId: process.env.WORKSPACE_ID || 'default'
+      }
+    });
   } else {
     res.status(401).json({ error: 'Not authenticated', code: 'UNAUTHORIZED' });
   }

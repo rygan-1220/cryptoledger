@@ -131,6 +131,10 @@ exports.ignite = async (req, res) => {
       client.release();
     }
 
+    // Set in memory for current process
+    process.env.COMPANY_NAME = companyName || 'CryptoLedger';
+    process.env.WORKSPACE_ID = workspaceId || 'default';
+
     // Convert ms -> seconds for express-session, with fallback
     const sessionTtlSeconds = sessionTtl ? Math.floor(sessionTtl / 1000) : 3600;
     const rateLimitEnabled = enableRateLimit !== false;
@@ -147,6 +151,8 @@ K_SESSION_TTL=${sessionTtlSeconds}
 FRONTEND_ORIGIN=http://localhost:5173
 NODE_ENV=development
 ENABLE_RATE_LIMIT=${rateLimitEnabled}
+COMPANY_NAME=${companyName || 'CryptoLedger'}
+WORKSPACE_ID=${workspaceId || 'default'}
 `;
     fs.writeFileSync(envPath, envContent);
 

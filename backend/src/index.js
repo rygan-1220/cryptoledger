@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const express = require("express");
 const cors = require("cors");
@@ -40,7 +41,12 @@ app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 app.use(morgan("dev"));
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    initialized: !!process.env.K_SYSTEM,
+    requires_setup: !process.env.K_SYSTEM,
+    time: new Date().toISOString() 
+  });
 });
 
 // ─── Setup Guard ─────────────────────────────────────────────────────────────

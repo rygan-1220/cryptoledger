@@ -5,6 +5,10 @@ import { unwrapKReal, loadPrivateKey } from '../services/cryptoService';
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
+    settings: {
+      companyName: 'CryptoLedger',
+      workspaceId: 'default'
+    },
     loading: false,
     error: null,
     requiresSetup: false
@@ -28,6 +32,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = true;
         const response = await api.post('/auth/login', { email, password });
         this.user = response.data.user;
+        if (response.data.settings) this.settings = response.data.settings;
 
         // Re-unwrap K_real using the stored RSA private key (survives logout)
         const { wrapped_kreal_for_user } = response.data;
@@ -66,6 +71,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.get('/auth/me');
         this.user = response.data.user;
+        if (response.data.settings) this.settings = response.data.settings;
         this.requiresSetup = false;
       } catch (err) {
         this.user = null;

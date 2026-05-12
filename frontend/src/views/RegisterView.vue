@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-background">
     <div class="max-w-md w-full bg-surface p-8 rounded-xl shadow-md border border-border">
-      <h2 class="text-3xl font-display text-text-main font-bold text-center mb-6">Register to CryptoLedger</h2>
+      <h2 class="text-3xl font-display text-text-main font-bold text-center mb-6">Register</h2>
       
       <form @submit.prevent="handleRegister" class="space-y-4">
         <div>

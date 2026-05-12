@@ -401,6 +401,6 @@ const igniteSystem = async () => {
 };
 
 const finishSetup = () => {
-  router.push('/login');
+  window.location.href = '/login';
 };
 </script>
