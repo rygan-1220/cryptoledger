@@ -209,11 +209,16 @@ const requestSession = async () => {
   sessionLoading.value = true;
   sessionError.value   = '';
   try {
-    const res = await api.post('/session-keys/request', { target_dept_id: expense.value.dept_id });
+    // Send this device's public key so server wraps K_session for the requesting device
+    const { unwrapKReal, getDevicePublicKey } = await import('../services/cryptoService');
+    const devicePubKey = await getDevicePublicKey();
+    const res = await api.post('/session-keys/request', {
+      target_dept_id: expense.value.dept_id,
+      public_key_pem: devicePubKey
+    });
     const { wrapped_kreal_for_requester } = res.data;
 
-    // Unwrap K_real using requester's RSA private key
-    const { unwrapKReal } = await import('../services/cryptoService');
+    // Unwrap K_real using this device's RSA private key
     const kRealHex = await unwrapKReal(wrapped_kreal_for_requester, null); // null = use stored key
     // Now decrypt using the unwrapped K_real
     await decryptData();

@@ -12,6 +12,8 @@ config.js
 dev_note.md
 API_DOCUMENTATION.md
 CODE_DOCUMENTATION.md
+*.md
+*.pdf
 
 # IDE and Editor
 .vscode/

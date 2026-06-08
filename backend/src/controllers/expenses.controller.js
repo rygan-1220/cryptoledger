@@ -28,17 +28,30 @@ exports.submitExpense = async (req, res) => {
   const user = req.session.user;
 
   try {
-    const userRes = await db.query('SELECT public_key_pem FROM users WHERE user_id = $1', [user.user_id]);
-    if (!userRes.rows.length) return res.status(404).json({ error: 'User not found' });
-
-    // Verify signature
-    const payloadToSign = JSON.stringify({ layer1_ciphertext, pattern, file_hash });
-    const isVerified = crypto.verify(
-      'sha256',
-      Buffer.from(payloadToSign),
-      { key: userRes.rows[0].public_key_pem, padding: crypto.constants.RSA_PKCS1_PADDING },
-      Buffer.from(digital_signature, 'base64')
+    // Collect all active device public keys for this user (supports per-device RSA keys)
+    const keysRes = await db.query(
+      'SELECT public_key_pem FROM user_public_keys WHERE user_id = $1 AND is_active = TRUE',
+      [user.user_id]
     );
+    if (!keysRes.rows.length) return res.status(404).json({ error: 'No device keys found for user' });
+
+    // Verify signature against all device keys (the signing device may not be the latest)
+    const payloadToSign = JSON.stringify({ layer1_ciphertext, pattern, file_hash });
+    const sigBuffer = Buffer.from(digital_signature, 'base64');
+    let isVerified = false;
+    for (const row of keysRes.rows) {
+      try {
+        isVerified = crypto.verify(
+          'sha256',
+          Buffer.from(payloadToSign),
+          { key: row.public_key_pem, padding: crypto.constants.RSA_PKCS1_PADDING },
+          sigBuffer
+        );
+        if (isVerified) break;
+      } catch (_) {
+        // Key format mismatch — skip and try next key
+      }
+    }
     if (!isVerified) return res.status(401).json({ error: 'Invalid digital signature', code: 'SIGNATURE_INVALID' });
 
     const { amount, project_id, dept_id, category, date } = pattern;

@@ -30,7 +30,15 @@
         </div>
 
         <div v-if="error" class="text-ember text-sm mt-2">{{ error }}</div>
-        
+
+        <!-- Password importance warning -->
+        <div class="bg-amber-50 border border-amber-400 rounded-lg p-4 mt-4">
+          <p class="text-amber-900 text-sm font-semibold mb-1">Your password is your recovery key.</p>
+          <p class="text-amber-800 text-xs leading-relaxed">
+            Your department encryption key (K_real) is encrypted with a key derived from your password and stored securely on the server. If you forget your password, you will <strong>permanently lose</strong> the ability to decrypt your expenses on any new device. We do not store your password and cannot reset it for you.
+          </p>
+        </div>
+
         <button type="submit" :disabled="loading" class="w-full bg-primary text-white font-medium py-3 mt-4 rounded hover:bg-primary-hover transition disabled:opacity-50">
           {{ loading ? 'Generating Keys...' : 'Register' }}
         </button>
@@ -47,7 +55,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import { generateRSAKeyPair, exportPublicKey, savePrivateKey, unwrapKReal } from '../services/cryptoService';
+import { generateRSAKeyPair, exportPublicKey, savePrivateKey, unwrapKReal, deriveKEK, encryptKRealWithKEK } from '../services/cryptoService';
 import api from '../services/api';
 
 const router = useRouter();
@@ -101,14 +109,29 @@ const handleRegister = async () => {
     };
     
     const response = await authStore.register(payload);
-    
+
     // 5. Unwrap K_real if provided
     if (response.wrapped_kreal_for_user) {
       await unwrapKReal(response.wrapped_kreal_for_user, keyPair.privateKey);
+      console.info('[CryptoLedger] K_real unwrapped and stored.');
+
+      // 6. Create KEK backup immediately so cross-device recovery works from day one
+      try {
+        const kRealHex = localStorage.getItem('cryptoledger_kreal');
+        if (kRealHex) {
+          const kek = await deriveKEK(form.password, form.email);
+          const encryptedBackup = await encryptKRealWithKEK(kRealHex, kek);
+          await authStore.login(form.email, form.password);
+          await authStore.backupKey(encryptedBackup);
+          console.info('[CryptoLedger] KEK backup created during registration.');
+        }
+      } catch (backupErr) {
+        console.warn('[CryptoLedger] KEK backup creation during registration failed (non-fatal):', backupErr.message);
+      }
     }
-    
-    // Redirect to login
-    router.push('/login');
+
+    // Redirect to home (already logged in from backup creation)
+    router.push('/');
   } catch (err) {
     console.error(err);
     error.value = err.message || 'Registration failed';

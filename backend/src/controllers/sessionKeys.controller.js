@@ -5,7 +5,7 @@ const { decryptSystem } = require('../services/cryptoService');
 
 // POST /api/session-keys/request
 exports.requestSessionKey = async (req, res) => {
-  const { target_dept_id } = req.body;
+  const { target_dept_id, public_key_pem } = req.body;
   const requester = req.session.user;
 
   if (!target_dept_id) return res.status(400).json({ error: 'target_dept_id required' });
@@ -18,14 +18,18 @@ exports.requestSessionKey = async (req, res) => {
     // 2. Decrypt K_real using K_system
     const kRealHex = decryptSystem(deptRes.rows[0].wrapped_kreal); // returns hex string
 
-    // 3. Get requester's public key
-    const userRes = await db.query('SELECT public_key_pem FROM users WHERE user_id = $1', [requester.user_id]);
-    if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    // 3. Use the requesting device's public key (sent by client), fallback to users table
+    let devicePublicKey = public_key_pem || null;
+    if (!devicePublicKey) {
+      const userRes = await db.query('SELECT public_key_pem FROM users WHERE user_id = $1', [requester.user_id]);
+      if (userRes.rows.length > 0) devicePublicKey = userRes.rows[0].public_key_pem;
+    }
+    if (!devicePublicKey) return res.status(404).json({ error: 'No public key available for this device' });
 
-    // 4. Re-wrap K_real with requester's RSA public key (RSA-OAEP)
+    // 4. Re-wrap K_real with the requesting device's RSA public key (RSA-OAEP)
     const kRealBuffer = Buffer.from(kRealHex, 'hex');
     const wrappedKRealForRequester = crypto.publicEncrypt(
-      { key: userRes.rows[0].public_key_pem, padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
+      { key: devicePublicKey, padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
       kRealBuffer
     ).toString('base64');
 

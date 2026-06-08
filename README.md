@@ -6,6 +6,7 @@
 
 - **🔐 Dual-Layer Encryption**: Sensitive financial data is encrypted on the client side (Layer 1) and wrapped in a system-level envelope (Layer 2) on the server.
 - **🖊️ RSA Digital Signatures**: Every transaction is digitally signed, ensuring non-repudiation and authenticity.
+- **🔑 Cross-Device Key Recovery**: Department encryption keys (K_real) are backed up to the server encrypted with a password-derived key (PBKDF2), enabling seamless recovery on new devices without compromising E2EE security.
 - **⛓️ Cryptographic Hash Chaining**: All expense records and audit logs are linked in a BLAKE2b hash chain, making tampering impossible without detection.
 - **🌳 Merkle Tree Verification**: Implements MTTBA (Merkle Trim Tree-Based Authentication) for efficient, high-performance integrity checks.
 - **🎭 Granular RBAC**: A sophisticated Role-Based Access Control system with 5 distinct roles: Employee, Dept Manager, Finance Manager, Admin, and CEO.

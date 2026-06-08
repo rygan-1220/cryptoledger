@@ -1,5 +1,9 @@
 const path = require("path");
+const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
+
+const ENV_PATH = path.join(__dirname, "../.env");
+const isSystemReady = () => fs.existsSync(ENV_PATH) && !!process.env.K_SYSTEM;
 
 const express = require("express");
 const cors = require("cors");
@@ -25,7 +29,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const app = express();
 const port = process.env.PORT || 3001;
 
-if (process.env.K_SYSTEM) {
+if (isSystemReady()) {
   app.use(apiLimiter);
 }
 
@@ -41,11 +45,12 @@ app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 app.use(morgan("dev"));
 
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
-    initialized: !!process.env.K_SYSTEM,
-    requires_setup: !process.env.K_SYSTEM,
-    time: new Date().toISOString() 
+  const initialized = isSystemReady();
+  res.json({
+    status: "ok",
+    initialized,
+    requires_setup: !initialized,
+    time: new Date().toISOString()
   });
 });
 
@@ -54,11 +59,10 @@ app.get("/api/health", (req, res) => {
 app.use('/api/setup', setupRoutes);
 
 app.use((req, res, next) => {
-  // If no K_SYSTEM, the system needs onboarding — block everything except /api/setup
-  if (!process.env.K_SYSTEM) {
-    return res.status(503).json({ 
-      error: 'System requires initialization.', 
-      requires_setup: true 
+  if (!isSystemReady()) {
+    return res.status(503).json({
+      error: 'System requires initialization.',
+      requires_setup: true
     });
   }
   next();

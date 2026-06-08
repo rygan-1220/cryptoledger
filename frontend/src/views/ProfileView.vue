@@ -17,24 +17,37 @@
 
       <div class="bg-background p-6 rounded-lg mb-8 border border-border">
         <h2 class="text-xl font-bold mb-4">Cryptographic Keys</h2>
-        
+
+        <!-- K_real Status -->
         <div class="mb-5">
-          <p class="font-bold mb-1">Private Key Status:</p>
-          <p :class="privateKeyPresent ? 'text-green-600 font-medium' : 'text-ember font-medium'">
-            {{ privateKeyPresent ? 'Loaded securely in local storage.' : 'MISSING! You will not be able to decrypt your expenses.' }}
-          </p>
-        </div>
-        
-        <div class="mb-6">
-          <p class="font-bold mb-1">Department K_real Status:</p>
+          <p class="font-bold mb-1">Department K_real (Encryption Key):</p>
           <p :class="kRealPresent ? 'text-green-600 font-medium' : 'text-ember font-medium'">
             {{ kRealPresent ? 'Loaded for Layer 1 encryption/decryption.' : 'MISSING! E2E encryption unavailable.' }}
           </p>
+          <p class="text-xs text-text-muted mt-1">
+            Recovered automatically on any device using your password. This is your most important key — without it, encrypted expenses cannot be read.
+          </p>
         </div>
 
-        <button @click="exportKey" :disabled="!privateKeyPresent" class="bg-primary text-white px-5 py-2.5 rounded hover:bg-primary-hover font-medium transition disabled:opacity-50">
-          Export My Private Key (Backup)
-        </button>
+        <div class="border-t border-border my-5"></div>
+
+        <!-- RSA Signing Key -->
+        <div class="mb-4">
+          <p class="font-bold mb-1">RSA Signing Key (Per-Device):</p>
+          <p :class="privateKeyPresent ? 'text-green-600 font-medium' : 'text-ember font-medium'">
+            {{ privateKeyPresent ? 'Present in local storage.' : 'MISSING! A new one will be auto-generated on next login.' }}
+          </p>
+          <p class="text-xs text-text-muted mt-1">
+            Used to sign expense submissions. Each device auto-generates its own key — losing it is harmless. A fresh key pair is created automatically when needed.
+          </p>
+        </div>
+
+        <!-- Password recovery info -->
+        <div class="mt-4 bg-amber-50 border border-amber-400 rounded-lg p-3">
+          <p class="text-amber-900 text-xs leading-relaxed">
+            <strong>Your password is your master recovery key.</strong> K_real is backed up to the server encrypted with a key derived from your password (PBKDF2, 210k iterations). The server never sees the derived key or the plaintext K_real. If you forget your password, encrypted expenses cannot be decrypted on any new device.
+          </p>
+        </div>
       </div>
       
       <button @click="handleLogout" class="border border-ember text-ember px-5 py-2.5 font-medium rounded hover:bg-ember hover:text-white transition">
@@ -56,31 +69,12 @@ const privateKeyPresent = ref(false);
 const kRealPresent = ref(false);
 
 onMounted(() => {
-  // Check localStorage for keys
   if (localStorage.getItem('cryptoledger_private_key')) privateKeyPresent.value = true;
   if (localStorage.getItem('cryptoledger_kreal')) kRealPresent.value = true;
 });
 
-const exportKey = () => {
-  const b64 = localStorage.getItem('cryptoledger_private_key');
-  if (!b64) return;
-  const binaryDerString = window.atob(b64);
-  const binaryDer = new Uint8Array(binaryDerString.length);
-  for (let i = 0; i < binaryDerString.length; i++) {
-    binaryDer[i] = binaryDerString.charCodeAt(i);
-  }
-  // Convert to Blob and download
-  const blob = new Blob([binaryDer], { type: "application/octet-stream" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'cryptoledger_private_key.bin';
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
 const handleLogout = async () => {
-  await authStore.logout();  // clears K_real only, private key stays
+  await authStore.logout();
   router.push('/login');
 };
 </script>

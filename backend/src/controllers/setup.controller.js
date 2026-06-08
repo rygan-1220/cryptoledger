@@ -16,7 +16,11 @@ const generateRecoveryPhrase = () => {
 };
 
 exports.getStatus = (req, res) => {
-  const isInitialized = !!process.env.K_SYSTEM && !!process.env.DATABASE_URL;
+  // .env file must exist on disk AND contain K_SYSTEM + DATABASE_URL
+  const fs = require('fs');
+  const path = require('path');
+  const envExists = fs.existsSync(path.join(__dirname, '../../.env'));
+  const isInitialized = envExists && !!process.env.K_SYSTEM && !!process.env.DATABASE_URL;
   res.json({
     isInitialized,
     defaults: {

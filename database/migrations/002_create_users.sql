@@ -6,6 +6,7 @@ CREATE TABLE users (
   role           VARCHAR(50) NOT NULL CHECK (role IN ('employee','dept_manager','finance_manager','admin','ceo')),
   dept_id        UUID REFERENCES departments(dept_id),
   public_key_pem TEXT NOT NULL,
+  encrypted_kreal_pwd TEXT,  -- K_real encrypted with password-derived KEK (PBKDF2) for cross-device recovery
   is_active      BOOLEAN DEFAULT TRUE,
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
