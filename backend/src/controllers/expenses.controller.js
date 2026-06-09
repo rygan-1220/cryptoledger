@@ -111,8 +111,8 @@ exports.getMyExpenses = async (req, res) => {
   const conditions = [`e.user_id=$${1}`];
   const params = [user_id];
   if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
-  if (status) {
-    const statuses = status.split(',').filter(Boolean);
+  const statuses = (Array.isArray(status) ? status.filter(Boolean) : String(status || '').split(',').filter(Boolean)).filter(Boolean);
+  if (statuses.length) {
     if (statuses.length === 1) {
       params.push(statuses[0]);
       conditions.push(`e.status=$${params.length}`);
@@ -145,8 +145,8 @@ exports.getDeptExpenses = async (req, res) => {
   const conditions = [`e.dept_id=$${1}`];
   const params = [dept_id];
   if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
-  if (status) {
-    const statuses = status.split(',').filter(Boolean);
+  const statuses = (Array.isArray(status) ? status.filter(Boolean) : String(status || '').split(',').filter(Boolean)).filter(Boolean);
+  if (statuses.length) {
     if (statuses.length === 1) {
       params.push(statuses[0]);
       conditions.push(`e.status=$${params.length}`);
@@ -177,8 +177,8 @@ exports.getAllExpenses = async (req, res) => {
   const params = [];
   if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
   if (dept_id) { params.push(dept_id); conditions.push(`e.dept_id=$${params.length}`); }
-  if (status) {
-    const statuses = status.split(',').filter(Boolean);
+  const statuses = (Array.isArray(status) ? status.filter(Boolean) : String(status || '').split(',').filter(Boolean)).filter(Boolean);
+  if (statuses.length) {
     if (statuses.length === 1) {
       params.push(statuses[0]);
       conditions.push(`e.status=$${params.length}`);
