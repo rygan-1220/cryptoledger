@@ -14,7 +14,8 @@
             @change="fetch"
           />
         </div>
-        <div class="flex items-end pb-0.5">
+        <div>
+          <p class="text-xs text-text-muted mb-1">&nbsp;</p>
           <label class="flex items-center gap-1.5 text-sm cursor-pointer">
             <input type="checkbox" v-model="filters.include_deleted" @change="fetch" class="rounded border-gray-300 text-primary focus:ring-primary/30" />
             <span class="text-text-muted">Include deleted</span>
@@ -151,10 +152,9 @@ onMounted(fetch);
 const changePage = (p) => { page.value = p; fetch(); };
 
 const canApprove = (exp) => {
+  if (exp.deleted) return false;
   const role = authStore.user?.role;
-  // Stage 1: Dept Manager approves pending expenses in their department
   if (role === 'dept_manager') return exp.status === 'pending';
-  // Stage 2: Finance Manager approves dept_approved (first) or payout_failed (retry after fix)
   if (role === 'finance_manager') return ['dept_approved', 'payout_failed'].includes(exp.status);
   return false;
 };

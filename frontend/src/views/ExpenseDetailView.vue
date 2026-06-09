@@ -263,7 +263,7 @@ const isPrivileged = computed(() =>
 // ─── Approve / Reject logic (same as AllExpensesView) ──────────────────────
 const canApprove = computed(() => {
   const exp = expense.value;
-  if (!exp) return false;
+  if (!exp || exp.deleted) return false;
   const role = authStore.user?.role;
   if (role === 'dept_manager') return exp.status === 'pending';
   if (role === 'finance_manager') return ['dept_approved', 'payout_failed'].includes(exp.status);

@@ -25,7 +25,8 @@
             <option>Other</option>
           </select>
         </div>
-        <div class="flex items-end pb-0.5">
+        <div>
+          <p class="text-xs text-text-muted mb-1">&nbsp;</p>
           <label class="flex items-center gap-1.5 text-sm cursor-pointer">
             <input type="checkbox" v-model="filters.include_deleted" @change="fetch" class="rounded border-gray-300 text-primary focus:ring-primary/30" />
             <span class="text-text-muted">Include deleted</span>
