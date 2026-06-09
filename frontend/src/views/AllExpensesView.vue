@@ -4,24 +4,33 @@
       <h1 class="text-3xl font-display font-bold text-text-main mb-6">All Expenses</h1>
 
       <!-- Filters -->
-      <div class="bg-surface border border-border rounded-xl p-4 mb-6 flex gap-4 flex-wrap">
-        <select v-model="filters.status" @change="fetch" class="border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="dept_approved">Dept Approved</option>
-          <option value="finance_approved">Finance Approved</option>
-          <option value="paid">Paid</option>
-          <option value="payout_failed">Payout Failed</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <select v-model="filters.category" @change="fetch" class="border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-          <option value="">All Categories</option>
-          <option>Office Supplies</option>
-          <option>Travel</option>
-          <option>Meals</option>
-          <option>Equipment</option>
-          <option>Other</option>
-        </select>
+      <div class="bg-surface border border-border rounded-xl p-4 mb-6 flex gap-4 flex-wrap items-start">
+        <div class="w-48">
+          <p class="text-xs text-text-muted mb-1">Status</p>
+          <FilterDropdown
+            v-model="filters.status"
+            :options="statusOptions"
+            placeholder="All Statuses"
+            @change="fetch"
+          />
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-1">Category</p>
+          <select v-model="filters.category" @change="fetch" class="border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="">All Categories</option>
+            <option>Office Supplies</option>
+            <option>Travel</option>
+            <option>Meals</option>
+            <option>Equipment</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="flex items-end pb-0.5">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="checkbox" v-model="filters.include_deleted" @change="fetch" class="rounded border-gray-300 text-primary focus:ring-primary/30" />
+            <span class="text-text-muted">Include deleted</span>
+          </label>
+        </div>
       </div>
 
       <div v-if="loading" class="text-text-muted text-center py-16">Loading…</div>
@@ -47,7 +56,8 @@
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
               <td class="px-5 py-3 text-right font-medium">${{ parseFloat(exp.amount).toFixed(2) }}</td>
               <td class="px-5 py-3 text-center">
-                <span :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">{{ exp.status }}</span>
+                <span v-if="exp.deleted" class="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-500 line-through">Deleted</span>
+                <span v-else :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">{{ exp.status.replace('_',' ') }}</span>
               </td>
               <td class="px-5 py-3 text-center flex gap-2 justify-center">
                 <router-link :to="`/expenses/${exp.expense_id}`" class="text-primary hover:underline text-xs">View</router-link>
@@ -99,6 +109,7 @@ import { useAuthStore } from '../stores/auth';
 import { useExpenseStore } from '../stores/expenses';
 import PayoutOverlay from '../components/PayoutOverlay.vue';
 import ActionDialog from '../components/ActionDialog.vue';
+import FilterDropdown from '../components/FilterDropdown.vue';
 
 const authStore = useAuthStore();
 const store    = useExpenseStore();
@@ -120,12 +131,26 @@ const total    = ref(0);
 const page     = ref(1);
 const limit    = ref(20);
 const loading  = ref(true);
-const filters  = reactive({ status: '', category: '' });
+const filters  = reactive({ status: [], category: '', include_deleted: false });
+
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'dept_approved', label: 'Dept Approved' },
+  { value: 'finance_approved', label: 'Finance Approved' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'payout_failed', label: 'Payout Failed' },
+  { value: 'rejected', label: 'Rejected' },
+];
 
 const fetch = async () => {
   loading.value = true;
   try {
-    const res = await store.fetchAllExpenses(page.value, limit.value, filters);
+    const params = {
+      status: filters.status.length ? filters.status.join(',') : '',
+      category: filters.category,
+      include_deleted: filters.include_deleted ? 'true' : '',
+    };
+    const res = await store.fetchAllExpenses(page.value, limit.value, params);
     expenses.value = res.data;
     total.value    = res.total;
   } finally { loading.value = false; }
@@ -135,10 +160,9 @@ onMounted(fetch);
 const changePage = (p) => { page.value = p; fetch(); };
 
 const canApprove = (exp) => {
+  if (exp.deleted) return false;
   const role = authStore.user?.role;
-  // Stage 1: Dept Manager approves pending expenses in their department
   if (role === 'dept_manager') return exp.status === 'pending';
-  // Stage 2: Finance Manager approves dept_approved (first) or payout_failed (retry after fix)
   if (role === 'finance_manager') return ['dept_approved', 'payout_failed'].includes(exp.status);
   return false;
 };

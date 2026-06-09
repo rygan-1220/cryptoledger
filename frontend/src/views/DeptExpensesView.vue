@@ -3,6 +3,25 @@
     <div class="max-w-5xl mx-auto">
       <h1 class="text-3xl font-display font-bold text-text-main mb-6">Department Expenses</h1>
 
+      <!-- Filters -->
+      <div class="bg-surface border border-border rounded-xl p-4 mb-6 flex gap-4 flex-wrap items-start">
+        <div class="w-48">
+          <p class="text-xs text-text-muted mb-1">Status</p>
+          <FilterDropdown
+            v-model="filters.status"
+            :options="statusOptions"
+            placeholder="All Statuses"
+            @change="fetch"
+          />
+        </div>
+        <div class="flex items-end pb-0.5">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="checkbox" v-model="filters.include_deleted" @change="fetch" class="rounded border-gray-300 text-primary focus:ring-primary/30" />
+            <span class="text-text-muted">Include deleted</span>
+          </label>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-text-muted text-center py-16">Loading…</div>
       <div v-else-if="!expenses.length" class="bg-surface border border-border rounded-xl p-16 text-center">
         <p class="text-text-muted">No department expenses found.</p>
@@ -28,11 +47,12 @@
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
               <td class="px-5 py-3 text-right font-medium">${{ parseFloat(exp.amount).toFixed(2) }}</td>
               <td class="px-5 py-3 text-center">
-                <span :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">{{ exp.status }}</span>
+                <span v-if="exp.deleted" class="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-500 line-through">Deleted</span>
+                <span v-else :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">{{ exp.status.replace('_',' ') }}</span>
               </td>
               <td class="px-5 py-3 text-center flex gap-2 justify-center">
                 <router-link :to="`/expenses/${exp.expense_id}`" class="text-primary hover:underline text-xs">View</router-link>
-                <template v-if="canApprove(exp)">
+                <template v-if="!exp.deleted && canApprove(exp)">
                   <button @click="handleStatus(exp.expense_id, 'approved')" class="text-green-600 hover:underline text-xs">Approve</button>
                   <button @click="handleStatus(exp.expense_id, 'rejected')" class="text-ember hover:underline text-xs">Reject</button>
                 </template>
@@ -75,11 +95,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useExpenseStore } from '../stores/expenses';
 import PayoutOverlay from '../components/PayoutOverlay.vue';
 import ActionDialog from '../components/ActionDialog.vue';
+import FilterDropdown from '../components/FilterDropdown.vue';
 
 const authStore = useAuthStore();
 const store    = useExpenseStore();
@@ -96,6 +117,17 @@ const dialogMode = ref('confirm');
 const pendingExpenseId = ref(null);
 const approving = ref(false);
 
+// Filters
+const filters = reactive({ status: [], include_deleted: false });
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'dept_approved', label: 'Dept Approved' },
+  { value: 'finance_approved', label: 'Finance Approved' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'payout_failed', label: 'Payout Failed' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
 const expenses = ref([]);
 const total    = ref(0);
 const page     = ref(1);
@@ -105,7 +137,11 @@ const loading  = ref(true);
 const fetch = async () => {
   loading.value = true;
   try {
-    const res = await store.fetchDeptExpenses(page.value, limit.value);
+    const params = {
+      status: filters.status.length ? filters.status.join(',') : '',
+      include_deleted: filters.include_deleted ? 'true' : '',
+    };
+    const res = await store.fetchDeptExpenses(page.value, limit.value, params);
     expenses.value = res.data;
     total.value    = res.total;
   } finally { loading.value = false; }

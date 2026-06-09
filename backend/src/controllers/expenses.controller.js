@@ -106,37 +106,87 @@ exports.submitExpense = async (req, res) => {
 exports.getMyExpenses = async (req, res) => {
   const { page, limit, offset } = paginate(req);
   const { user_id } = req.session.user;
+  const { status, include_deleted } = req.query;
+
+  const conditions = [`e.user_id=$${1}`];
+  const params = [user_id];
+  if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
+  if (status) {
+    const statuses = status.split(',').filter(Boolean);
+    if (statuses.length === 1) {
+      params.push(statuses[0]);
+      conditions.push(`e.status=$${params.length}`);
+    } else if (statuses.length > 1) {
+      const placeholders = statuses.map(s => { params.push(s); return `$${params.length}`; }).join(',');
+      conditions.push(`e.status IN (${placeholders})`);
+    }
+  }
+
+  const where = `WHERE ${conditions.join(' AND ')}`;
+  params.push(limit, offset);
+  const countParams = params.slice(0, -2);
+
   try {
     const [data, count] = await Promise.all([
-      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id WHERE e.user_id=$1 AND e.deleted=false ORDER BY e.created_at DESC LIMIT $2 OFFSET $3`, [user_id, limit, offset]),
-      db.query('SELECT COUNT(*) FROM expenses WHERE user_id=$1 AND deleted=false', [user_id])
+      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id ${where} ORDER BY e.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params),
+      db.query(`SELECT COUNT(*) FROM expenses ${where.replace(/e\./g,'')}`, countParams)
     ]);
     res.json({ data: data.rows, total: parseInt(count.rows[0].count), page, limit });
-  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Internal server error' }); }
 };
 
 // ─── Department Expenses (Manager+) ─────────────────────────────────────────
 exports.getDeptExpenses = async (req, res) => {
   const { page, limit, offset } = paginate(req);
   const { dept_id } = req.session.user;
+  const { status, include_deleted } = req.query;
   if (!dept_id) return res.status(400).json({ error: 'No department assigned' });
+
+  const conditions = [`e.dept_id=$${1}`];
+  const params = [dept_id];
+  if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
+  if (status) {
+    const statuses = status.split(',').filter(Boolean);
+    if (statuses.length === 1) {
+      params.push(statuses[0]);
+      conditions.push(`e.status=$${params.length}`);
+    } else if (statuses.length > 1) {
+      const placeholders = statuses.map(s => { params.push(s); return `$${params.length}`; }).join(',');
+      conditions.push(`e.status IN (${placeholders})`);
+    }
+  }
+
+  const where = `WHERE ${conditions.join(' AND ')}`;
+  params.push(limit, offset);
+  const countParams = params.slice(0, -2);
+
   try {
     const [data, count] = await Promise.all([
-      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id WHERE e.dept_id=$1 AND e.deleted=false ORDER BY e.created_at DESC LIMIT $2 OFFSET $3`, [dept_id, limit, offset]),
-      db.query('SELECT COUNT(*) FROM expenses WHERE dept_id=$1 AND deleted=false', [dept_id])
+      db.query(`SELECT ${EXPENSE_COLS} FROM expenses e JOIN users u ON e.user_id = u.user_id JOIN departments d ON e.dept_id = d.dept_id ${where} ORDER BY e.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params),
+      db.query(`SELECT COUNT(*) FROM expenses ${where.replace(/e\./g,'')}`, countParams)
     ]);
     res.json({ data: data.rows, total: parseInt(count.rows[0].count), page, limit });
-  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Internal server error' }); }
 };
 
 // ─── All Expenses (Finance/Admin/CEO) ───────────────────────────────────────
 exports.getAllExpenses = async (req, res) => {
   const { page, limit, offset } = paginate(req);
-  const { dept_id, status, category } = req.query;
-  const conditions = ['e.deleted=false'];
+  const { dept_id, status, category, include_deleted } = req.query;
+  const conditions = [];
   const params = [];
+  if (include_deleted !== 'true') { conditions.push('e.deleted=false'); }
   if (dept_id) { params.push(dept_id); conditions.push(`e.dept_id=$${params.length}`); }
-  if (status)  { params.push(status);  conditions.push(`e.status=$${params.length}`); }
+  if (status) {
+    const statuses = status.split(',').filter(Boolean);
+    if (statuses.length === 1) {
+      params.push(statuses[0]);
+      conditions.push(`e.status=$${params.length}`);
+    } else if (statuses.length > 1) {
+      const placeholders = statuses.map(s => { params.push(s); return `$${params.length}`; }).join(',');
+      conditions.push(`e.status IN (${placeholders})`);
+    }
+  }
   if (category){ params.push(category);conditions.push(`e.category=$${params.length}`); }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

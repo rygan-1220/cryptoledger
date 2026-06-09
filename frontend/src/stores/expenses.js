@@ -18,13 +18,13 @@ export const useExpenseStore = defineStore('expenses', {
       } finally { this.loading = false; }
     },
 
-    async fetchMyExpenses(page = 1, limit = 20) {
-      const res = await api.get('/expenses', { params: { page, limit } });
+    async fetchMyExpenses(page = 1, limit = 20, filters = {}) {
+      const res = await api.get('/expenses', { params: { page, limit, ...filters } });
       return res.data; // { data, total, page, limit }
     },
 
-    async fetchDeptExpenses(page = 1, limit = 20) {
-      const res = await api.get('/expenses/department', { params: { page, limit } });
+    async fetchDeptExpenses(page = 1, limit = 20, filters = {}) {
+      const res = await api.get('/expenses/department', { params: { page, limit, ...filters } });
       return res.data;
     },
 

@@ -17,7 +17,8 @@
               <p class="text-text-muted text-sm mb-1">Expense ID</p>
               <p class="font-mono text-xs text-text-muted">{{ expense.expense_id }}</p>
             </div>
-            <span :class="statusClass(expense.status)" class="px-3 py-1 rounded-full text-sm font-medium uppercase tracking-tight">
+            <span v-if="expense.deleted" class="px-3 py-1 rounded-full text-sm font-medium uppercase tracking-tight bg-gray-200 text-gray-500 line-through">Deleted</span>
+            <span v-else :class="statusClass(expense.status)" class="px-3 py-1 rounded-full text-sm font-medium uppercase tracking-tight">
               {{ expense.status.replace('_',' ') }}
             </span>
           </div>
