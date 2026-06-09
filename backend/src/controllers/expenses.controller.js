@@ -164,11 +164,15 @@ exports.getExpenseById = async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT expense_id, user_id, dept_id, amount, project_id, category, status,
-              layer2_ciphertext, encrypted_receipt, file_mime_type, file_hash,
-              digital_signature, prev_hash, hash, created_at, updated_at, deleted,
-              rejection_reason, rejected_by_role
-       FROM expenses WHERE expense_id=$1`, [id]
+      `SELECT e.expense_id, e.user_id, e.dept_id, e.amount, e.project_id, e.category, e.status,
+              e.layer2_ciphertext, e.encrypted_receipt, e.file_mime_type, e.file_hash,
+              e.digital_signature, e.prev_hash, e.hash, e.created_at, e.updated_at, e.deleted,
+              e.rejection_reason, e.rejected_by_role,
+              u.username as employee_name, d.dept_name
+       FROM expenses e
+       JOIN users u ON e.user_id = u.user_id
+       JOIN departments d ON e.dept_id = d.dept_id
+       WHERE e.expense_id=$1`, [id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
     const expense = result.rows[0];
@@ -228,7 +232,9 @@ exports.getExpenseById = async (req, res) => {
         updated_at:       expense.updated_at,
         deleted:          expense.deleted,
         rejection_reason: expense.rejection_reason,
-        rejected_by_role: expense.rejected_by_role
+        rejected_by_role: expense.rejected_by_role,
+        employee_name:    expense.employee_name,
+        dept_name:        expense.dept_name
       },
       layer1_ciphertext,   // for client-side Layer 1 decryption using K_real
       encrypted_receipt:   receiptData

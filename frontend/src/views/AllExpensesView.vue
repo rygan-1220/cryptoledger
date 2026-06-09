@@ -77,6 +77,18 @@
         @close="payoutVisible = false"
         @cancelled="onPayoutCancelled"
       />
+
+      <!-- Action Confirmation Dialog -->
+      <ActionDialog
+        :visible="dialogVisible"
+        :mode="dialogMode"
+        :title="dialogMode === 'reject' ? 'Reject Expense' : 'Approve Expense'"
+        :message="dialogMode === 'reject' ? 'Please provide a reason for rejecting this expense.' : 'Are you sure you want to approve this expense?'"
+        :confirm-label="dialogMode === 'reject' ? 'Reject' : 'Approve'"
+        :loading="approving"
+        @confirm="onDialogConfirm"
+        @cancel="dialogVisible = false"
+      />
     </div>
   </div>
 </template>
@@ -86,6 +98,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useExpenseStore } from '../stores/expenses';
 import PayoutOverlay from '../components/PayoutOverlay.vue';
+import ActionDialog from '../components/ActionDialog.vue';
 
 const authStore = useAuthStore();
 const store    = useExpenseStore();
@@ -95,6 +108,12 @@ const payoutVisible = ref(false);
 const payoutExpenseId = ref('');
 const payoutAmount = ref(0);
 const payoutEmployeeName = ref('');
+
+// Action dialog state
+const dialogVisible = ref(false);
+const dialogMode = ref('confirm');
+const pendingExpenseId = ref(null);
+const approving = ref(false);
 
 const expenses = ref([]);
 const total    = ref(0);
@@ -124,17 +143,19 @@ const canApprove = (exp) => {
   return false;
 };
 
-const handleStatus = async (id, status) => {
-  let reason = null;
-  if (status === 'rejected') {
-    reason = prompt('Please enter a reason for rejection:');
-    if (!reason) return;
-  } else {
-    if (!confirm('Approve this expense?')) return;
-  }
+const handleStatus = (id, status) => {
+  pendingExpenseId.value = id;
+  dialogMode.value = status === 'rejected' ? 'reject' : 'confirm';
+  dialogVisible.value = true;
+};
+
+const onDialogConfirm = async (reason) => {
+  dialogVisible.value = false;
+  const id = pendingExpenseId.value;
+  const status = dialogMode.value === 'reject' ? 'rejected' : 'approved';
+  approving.value = true;
   try {
-    const res = await store.updateStatus(id, status, reason);
-    // If finance manager approved (status → 'finance_approved'), show payout overlay
+    const res = await store.updateStatus(id, status, reason || null);
     if (res.newStatus === 'finance_approved') {
       const exp = expenses.value.find(e => e.expense_id === id);
       if (exp) {
@@ -147,6 +168,8 @@ const handleStatus = async (id, status) => {
     fetch();
   } catch (e) {
     alert(e);
+  } finally {
+    approving.value = false;
   }
 };
 
