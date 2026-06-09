@@ -5,15 +5,6 @@ const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const redisClient = require('../config/redis');
 
-// Generate a simple 12-word recovery phrase (simplified for example)
-const generateRecoveryPhrase = () => {
-  const words = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima', 'mike', 'november', 'oscar', 'papa', 'quebec', 'romeo', 'sierra', 'tango', 'uniform', 'victor', 'whiskey', 'xray', 'yankee', 'zulu'];
-  const phrase = [];
-  for (let i = 0; i < 12; i++) {
-    phrase.push(words[crypto.randomInt(0, words.length)]);
-  }
-  return phrase.join(' ');
-};
 
 exports.getStatus = (req, res) => {
   // .env file must exist on disk AND contain K_SYSTEM + DATABASE_URL
@@ -52,7 +43,6 @@ exports.ignite = async (req, res) => {
 
     const client = await db.connect();
     let wrappedManagementKey = null;
-    let recoveryPhrase = null;
     let invites = [];
 
     const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
@@ -125,9 +115,6 @@ exports.ignite = async (req, res) => {
         }
       }
 
-      // 8. Generate Recovery Phrase
-      recoveryPhrase = generateRecoveryPhrase();
-
       await client.query('COMMIT');
     } catch (e) {
       await client.query('ROLLBACK');
@@ -165,7 +152,6 @@ WORKSPACE_ID=${workspaceId || 'default'}
     res.json({
       message: 'System ignited successfully.',
       wrapped_management_key: wrappedManagementKey,
-      recoveryPhrase,
       invites // <-- Return the invites
     });
   } catch (err) {

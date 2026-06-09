@@ -48,6 +48,16 @@
           </div>
         </div>
       </div>
+
+      <!-- Payout Overlay -->
+      <PayoutOverlay
+        :visible="payoutVisible"
+        :expense-id="payoutExpenseId"
+        :amount="payoutAmount"
+        :employee-name="payoutEmployeeName"
+        @close="payoutVisible = false"
+        @cancelled="onPayoutCancelled"
+      />
     </div>
   </div>
 </template>
@@ -56,9 +66,16 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useExpenseStore } from '../stores/expenses';
+import PayoutOverlay from '../components/PayoutOverlay.vue';
 
 const authStore = useAuthStore();
 const store    = useExpenseStore();
+
+// Payout overlay state
+const payoutVisible = ref(false);
+const payoutExpenseId = ref('');
+const payoutAmount = ref(0);
+const payoutEmployeeName = ref('');
 
 const expenses = ref([]);
 const total    = ref(0);
@@ -80,8 +97,10 @@ const changePage = (p) => { page.value = p; fetch(); };
 
 const canApprove = (exp) => {
   const role = authStore.user?.role;
+  // Stage 1: Dept Manager approves pending expenses in their department
   if (role === 'dept_manager') return exp.status === 'pending';
-  if (['finance_manager', 'admin', 'ceo'].includes(role)) return exp.status === 'dept_approved';
+  // Stage 2: Finance Manager approves dept_approved (first) or payout_failed (retry after fix)
+  if (role === 'finance_manager') return ['dept_approved', 'payout_failed'].includes(exp.status);
   return false;
 };
 
@@ -94,18 +113,35 @@ const handleStatus = async (id, status) => {
     if (!confirm('Approve this expense?')) return;
   }
   try {
-    await store.updateStatus(id, status, reason);
+    const res = await store.updateStatus(id, status, reason);
+    // If finance manager approved (status → 'finance_approved'), show payout overlay
+    if (res.newStatus === 'finance_approved') {
+      const exp = expenses.value.find(e => e.expense_id === id);
+      if (exp) {
+        payoutExpenseId.value = id;
+        payoutAmount.value = parseFloat(exp.amount);
+        payoutEmployeeName.value = exp.employee_name || 'Employee';
+        payoutVisible.value = true;
+      }
+    }
     fetch();
   } catch (e) {
     alert(e);
   }
 };
 
+const onPayoutCancelled = () => {
+  payoutVisible.value = false;
+  fetch();
+};
+
 const formatDate  = (d) => new Date(d).toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' });
 const statusClass = (s) => ({
-  pending:       'bg-yellow-100 text-yellow-700',
-  dept_approved: 'bg-blue-100 text-blue-700',
-  approved:      'bg-green-100 text-green-700',
-  rejected:      'bg-red-100 text-red-700'
+  pending:          'bg-yellow-100 text-yellow-700',
+  dept_approved:    'bg-blue-100 text-blue-700',
+  finance_approved: 'bg-indigo-100 text-indigo-700',
+  paid:             'bg-green-100 text-green-700',
+  payout_failed:    'bg-orange-100 text-orange-700',
+  rejected:         'bg-red-100 text-red-700'
 }[s] || '');
 </script>

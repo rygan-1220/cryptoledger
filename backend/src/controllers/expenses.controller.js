@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 const { encryptSystem, decryptSystem } = require('../services/cryptoService');
-const { getPrevExpenseHash, calculateExpenseHash } = require('../services/hashChain');
+const { getPrevExpenseHash, calculateExpenseHash, GENESIS_HASH } = require('../services/hashChain');
 const { logAction } = require('../services/auditService');
 const { validationResult } = require('express-validator');
 
@@ -263,6 +263,10 @@ exports.softDeleteExpense = async (req, res) => {
 };
 
 // ─── Approve / Reject ────────────────────────────────────────────────────────
+// Status flow:
+//   pending → dept_approved (dept mgr) → finance_approved (finance mgr) → paid (auto)
+//                                                                        → payout_failed (auto) → finance_approved (retry)
+//   Any → rejected (manual, terminal)
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
   const { status, reason } = req.body; // status: 'approved' | 'rejected'
@@ -277,16 +281,32 @@ exports.updateStatus = async (req, res) => {
     const expense = result.rows[0];
 
     let newStatus = status === 'rejected' ? 'rejected' : null;
+    let action = null;
 
     if (user.role === 'dept_manager') {
+      // Dept Manager: pending → dept_approved, or pending → rejected
       if (expense.status !== 'pending') return res.status(400).json({ error: 'Dept Manager can only update pending expenses' });
       if (expense.dept_id !== user.dept_id) return res.status(403).json({ error: 'Forbidden: Different department' });
-      if (status === 'approved') newStatus = 'dept_approved';
-    } else if (['finance_manager', 'admin', 'ceo'].includes(user.role)) {
-      if (expense.status !== 'dept_approved' && status === 'approved') {
-        return res.status(400).json({ error: 'Finance Manager can only approve dept_approved expenses' });
+      if (status === 'approved') { newStatus = 'dept_approved'; action = 'DEPT_APPROVE'; }
+      else { action = 'DEPT_REJECT'; }
+    } else if (user.role === 'finance_manager') {
+      // Finance Manager:
+      //   dept_approved → finance_approved (first approval)
+      //   payout_failed → finance_approved (retry after fix)
+      //   dept_approved / payout_failed → rejected (manual reject)
+      if (status === 'approved') {
+        if (!['dept_approved', 'payout_failed'].includes(expense.status)) {
+          return res.status(400).json({ error: 'Finance Manager can only approve dept_approved or payout_failed expenses' });
+        }
+        newStatus = 'finance_approved';
+        action = 'FINANCE_APPROVE';
+      } else {
+        // Reject
+        if (!['dept_approved', 'payout_failed'].includes(expense.status)) {
+          return res.status(400).json({ error: 'Finance Manager can only reject dept_approved or payout_failed expenses' });
+        }
+        action = 'FINANCE_REJECT';
       }
-      if (status === 'approved') newStatus = 'approved';
     } else {
       return res.status(403).json({ error: 'Forbidden: Unauthorized role' });
     }
@@ -300,7 +320,7 @@ exports.updateStatus = async (req, res) => {
       );
       await logAction(client, {
         expense_id: id,
-        action: status === 'approved' ? 'APPROVE' : 'REJECT',
+        action,
         actor_id: user.user_id,
         metadata: { from_status: expense.status, to_status: newStatus, reason: reason || null }
       });
@@ -312,6 +332,262 @@ exports.updateStatus = async (req, res) => {
     } finally { client.release(); }
   } catch (err) {
     console.error('Update Status Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ─── Verify Expense Integrity (for payout) ────────────────────────────────────
+exports.verifyExpense = async (req, res) => {
+  const { id } = req.params;
+  const user = req.session.user;
+
+  try {
+    const result = await db.query(
+      `SELECT e.expense_id, e.user_id, e.dept_id, e.amount, e.layer2_ciphertext,
+              e.digital_signature, e.file_hash, e.prev_hash, e.hash, e.created_at,
+              u.bank_name, u.bank_account_no, u.account_holder_name
+       FROM expenses e
+       JOIN users u ON e.user_id = u.user_id
+       WHERE e.expense_id = $1 AND e.deleted = false`, [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
+    const expense = result.rows[0];
+
+    const verification = {
+      signature_valid: false,
+      signature_detail: null,
+      hash_chain_valid: false,
+      hash_chain_detail: null,
+      submitter_has_bank_info: !!(expense.bank_name && expense.bank_account_no && expense.account_holder_name)
+    };
+
+    // ── 1. Digital Signature Re-verification ──
+    try {
+      // Decrypt Layer 2 to reconstruct the original signed payload
+      const decrypted = JSON.parse(decryptSystem(expense.layer2_ciphertext));
+      const { layer1_ciphertext, pattern } = decrypted;
+
+      const payloadToSign = JSON.stringify({
+        layer1_ciphertext,
+        pattern,
+        file_hash: expense.file_hash
+      });
+      const sigBuffer = Buffer.from(expense.digital_signature, 'base64');
+
+      // Fetch all active public keys for the submitter
+      const keysRes = await db.query(
+        'SELECT public_key_pem FROM user_public_keys WHERE user_id = $1 AND is_active = TRUE',
+        [expense.user_id]
+      );
+
+      let sigVerified = false;
+      for (const row of keysRes.rows) {
+        try {
+          sigVerified = crypto.verify(
+            'sha256',
+            Buffer.from(payloadToSign),
+            { key: row.public_key_pem, padding: crypto.constants.RSA_PKCS1_PADDING },
+            sigBuffer
+          );
+          if (sigVerified) break;
+        } catch (_) { /* try next key */ }
+      }
+      verification.signature_valid = sigVerified;
+      if (!sigVerified) {
+        verification.signature_detail = 'Digital signature does not match any active device key for this user.';
+      }
+    } catch (e) {
+      verification.signature_valid = false;
+      verification.signature_detail = `Signature verification error: ${e.message}`;
+    }
+
+    // ── 2. Hash Chain Integrity ──
+    try {
+      const computedHash = calculateExpenseHash(
+        expense.expense_id,
+        expense.prev_hash,
+        expense.amount,
+        expense.dept_id,
+        new Date(expense.created_at)
+      );
+
+      if (computedHash !== expense.hash) {
+        verification.hash_chain_valid = false;
+        verification.hash_chain_detail = 'Expense hash does not match recomputed value. Data may have been tampered with.';
+      } else {
+        // Verify chain link: prev_hash must match previous expense's hash (or genesis)
+        const prevRes = await db.query(
+          'SELECT hash FROM expenses WHERE created_at < $1 AND deleted = false ORDER BY created_at DESC LIMIT 1',
+          [expense.created_at]
+        );
+
+        if (prevRes.rows.length === 0) {
+          // This is the first expense — prev_hash must be genesis
+          if (expense.prev_hash !== GENESIS_HASH) {
+            verification.hash_chain_valid = false;
+            verification.hash_chain_detail = 'First expense does not reference genesis hash.';
+          } else {
+            verification.hash_chain_valid = true;
+          }
+        } else {
+          if (expense.prev_hash !== prevRes.rows[0].hash) {
+            verification.hash_chain_valid = false;
+            verification.hash_chain_detail = 'Hash chain broken: prev_hash does not match the previous expense hash.';
+          } else {
+            verification.hash_chain_valid = true;
+          }
+        }
+      }
+    } catch (e) {
+      verification.hash_chain_valid = false;
+      verification.hash_chain_detail = `Hash chain verification error: ${e.message}`;
+    }
+
+    // Log the verification
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await logAction(client, {
+        expense_id: id,
+        action: 'VERIFY_PAYOUT',
+        actor_id: user.user_id,
+        metadata: verification
+      });
+      await client.query('COMMIT');
+    } catch (e) { await client.query('ROLLBACK'); }
+    finally { client.release(); }
+
+    res.json(verification);
+  } catch (err) {
+    console.error('Verify Expense Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ─── Cancel Payout (revert finance_approved → dept_approved, before payout runs) ─
+exports.cancelPayout = async (req, res) => {
+  const { id } = req.params;
+  const user = req.session.user;
+
+  try {
+    const result = await db.query(
+      'SELECT expense_id, status FROM expenses WHERE expense_id = $1 AND deleted = false', [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
+    const expense = result.rows[0];
+
+    if (expense.status !== 'finance_approved') {
+      return res.status(400).json({ error: 'Payout can only be cancelled for finance_approved expenses' });
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "UPDATE expenses SET status='dept_approved', updated_at=NOW(), rejection_reason=NULL, rejected_by_role=NULL WHERE expense_id=$1",
+        [id]
+      );
+      await logAction(client, {
+        expense_id: id,
+        action: 'CANCEL_PAYOUT',
+        actor_id: user.user_id,
+        metadata: { from_status: 'finance_approved', to_status: 'dept_approved' }
+      });
+      await client.query('COMMIT');
+      res.json({ message: 'Payout cancelled. Expense reverted to dept_approved.', newStatus: 'dept_approved' });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch (err) {
+    console.error('Cancel Payout Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ─── Payout Success (finance_approved → paid) ─────────────────────────────────
+exports.payoutSuccess = async (req, res) => {
+  const { id } = req.params;
+  const user = req.session.user;
+
+  try {
+    const result = await db.query(
+      'SELECT expense_id, status FROM expenses WHERE expense_id = $1 AND deleted = false', [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
+    const expense = result.rows[0];
+
+    if (expense.status !== 'finance_approved') {
+      return res.status(400).json({ error: 'Payout success can only be recorded for finance_approved expenses' });
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "UPDATE expenses SET status='paid', updated_at=NOW() WHERE expense_id=$1",
+        [id]
+      );
+      await logAction(client, {
+        expense_id: id,
+        action: 'PAYOUT_SUCCESS',
+        actor_id: user.user_id,
+        metadata: { from_status: 'finance_approved', to_status: 'paid' }
+      });
+      await client.query('COMMIT');
+      res.json({ message: 'Payout completed successfully.', newStatus: 'paid' });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch (err) {
+    console.error('Payout Success Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// ─── Fail Payout (finance_approved → payout_failed, auto-set by system) ─────────
+// Called by frontend when payout verification fails or submitter has no bank info.
+// Sets status to 'payout_failed' — retryable, not terminal like 'rejected'.
+exports.failPayout = async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const user = req.session.user;
+
+  if (!reason) return res.status(400).json({ error: 'Failure reason is required' });
+
+  try {
+    const result = await db.query(
+      'SELECT expense_id, status FROM expenses WHERE expense_id = $1 AND deleted = false', [id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Expense not found' });
+    const expense = result.rows[0];
+
+    if (expense.status !== 'finance_approved') {
+      return res.status(400).json({ error: 'Payout failure can only be recorded for finance_approved expenses' });
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        "UPDATE expenses SET status='payout_failed', rejection_reason=$1, rejected_by_role=NULL, updated_at=NOW() WHERE expense_id=$2",
+        [reason, id]
+      );
+      await logAction(client, {
+        expense_id: id,
+        action: 'FAIL_PAYOUT',
+        actor_id: user.user_id,
+        metadata: { from_status: 'finance_approved', to_status: 'payout_failed', reason }
+      });
+      await client.query('COMMIT');
+      res.json({ message: 'Payout failed.', newStatus: 'payout_failed' });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch (err) {
+    console.error('Fail Payout Error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

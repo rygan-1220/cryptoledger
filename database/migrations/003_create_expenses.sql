@@ -5,7 +5,7 @@ CREATE TABLE expenses (
   amount            FLOAT NOT NULL,
   project_id        VARCHAR(100),
   category          VARCHAR(100),
-  status            VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending','dept_approved','approved','rejected')),
+  status            VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending','dept_approved','finance_approved','paid','payout_failed','rejected')),
   rejection_reason  TEXT,
   rejected_by_role  VARCHAR(50),
   layer2_ciphertext BYTEA NOT NULL,

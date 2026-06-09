@@ -27,6 +27,7 @@ router.post(
 
 router.post('/logout', requireAuth, authController.logout);
 router.get('/me', requireAuth, authController.me);
+router.put('/profile', requireAuth, authController.updateProfile);
 
 // Cross-device key management
 router.put('/backup-key', requireAuth, authController.backupKey);

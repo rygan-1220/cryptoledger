@@ -15,6 +15,53 @@
         </div>
       </div>
 
+      <!-- Bank Information -->
+      <div class="bg-background p-6 rounded-lg mb-8 border border-border">
+        <h2 class="text-xl font-bold mb-4">Bank Information</h2>
+        <p class="text-xs text-text-muted mb-4">Required for expense payout. Your banking details are stored securely.</p>
+
+        <div v-if="bankSaved" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          Bank information saved successfully.
+        </div>
+        <div v-if="bankError" class="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-ember text-sm">
+          {{ bankError }}
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-text-muted uppercase mb-1">Bank Name</label>
+            <input
+              v-model="bankForm.bank_name"
+              class="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="e.g., Maybank, CIMB, Hong Leong"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted uppercase mb-1">Bank Account No</label>
+            <input
+              v-model="bankForm.bank_account_no"
+              class="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="Enter your account number"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted uppercase mb-1">Account Holder Name</label>
+            <input
+              v-model="bankForm.account_holder_name"
+              class="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="Name on the bank account"
+            />
+          </div>
+          <button
+            @click="saveBankInfo"
+            :disabled="savingBank"
+            class="bg-primary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary-hover transition disabled:opacity-50 text-sm"
+          >
+            {{ savingBank ? 'Saving...' : 'Save Bank Info' }}
+          </button>
+        </div>
+      </div>
+
       <div class="bg-background p-6 rounded-lg mb-8 border border-border">
         <h2 class="text-xl font-bold mb-4">Cryptographic Keys</h2>
 
@@ -58,9 +105,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import api from '../services/api';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -68,9 +116,57 @@ const router = useRouter();
 const privateKeyPresent = ref(false);
 const kRealPresent = ref(false);
 
-onMounted(() => {
+const bankForm = reactive({
+  bank_name: '',
+  bank_account_no: '',
+  account_holder_name: ''
+});
+const savingBank = ref(false);
+const bankSaved = ref(false);
+const bankError = ref('');
+
+const fetchBankInfo = async () => {
+  try {
+    const res = await api.get('/auth/me');
+    if (res.data.user) {
+      bankForm.bank_name = res.data.user.bank_name || '';
+      bankForm.bank_account_no = res.data.user.bank_account_no || '';
+      bankForm.account_holder_name = res.data.user.account_holder_name || '';
+    }
+  } catch (e) {
+    console.error('Failed to fetch bank info:', e);
+  }
+};
+
+const saveBankInfo = async () => {
+  savingBank.value = true;
+  bankSaved.value = false;
+  bankError.value = '';
+  try {
+    await api.put('/auth/profile', {
+      bank_name: bankForm.bank_name,
+      bank_account_no: bankForm.bank_account_no,
+      account_holder_name: bankForm.account_holder_name
+    });
+    // Update auth store so navbar etc. has latest bank info
+    if (authStore.user) {
+      authStore.user.bank_name = bankForm.bank_name;
+      authStore.user.bank_account_no = bankForm.bank_account_no;
+      authStore.user.account_holder_name = bankForm.account_holder_name;
+    }
+    bankSaved.value = true;
+    setTimeout(() => { bankSaved.value = false; }, 4000);
+  } catch (e) {
+    bankError.value = e.response?.data?.error || e.message || 'Failed to save bank info';
+  } finally {
+    savingBank.value = false;
+  }
+};
+
+onMounted(async () => {
   if (localStorage.getItem('cryptoledger_private_key')) privateKeyPresent.value = true;
   if (localStorage.getItem('cryptoledger_kreal')) kRealPresent.value = true;
+  await fetchBankInfo();
 });
 
 const handleLogout = async () => {

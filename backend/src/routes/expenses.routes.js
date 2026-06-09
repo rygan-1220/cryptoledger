@@ -36,8 +36,20 @@ router.get('/:id', ctrl.getExpenseById);
 // Soft delete (owner, pending only)
 router.delete('/:id', ctrl.softDeleteExpense);
 
-// Approve / Reject
+// Approve / Reject (stage 1: dept_manager, stage 2: finance_manager only)
 router.patch('/:id/status', requireRole(['dept_manager', 'finance_manager']), ctrl.updateStatus);
+
+// Verify expense integrity (signature + hash chain) for payout
+router.post('/:id/verify', requireRole(['finance_manager', 'admin', 'ceo']), ctrl.verifyExpense);
+
+// Cancel payout (revert approved → dept_approved)
+router.post('/:id/cancel-payout', requireRole(['finance_manager', 'admin', 'ceo']), ctrl.cancelPayout);
+
+// Payout success (finance_approved → paid)
+router.post('/:id/payout-success', requireRole(['finance_manager', 'admin', 'ceo']), ctrl.payoutSuccess);
+
+// Fail payout (finance_approved → payout_failed — retryable, not terminal)
+router.post('/:id/fail-payout', requireRole(['finance_manager', 'admin', 'ceo']), ctrl.failPayout);
 
 module.exports = router;
 

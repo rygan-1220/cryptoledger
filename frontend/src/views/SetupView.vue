@@ -238,23 +238,6 @@
                 <p class="text-text-muted mt-2">CryptoLedger has been successfully initialized.</p>
               </div>
 
-              <!-- Recovery Phrase -->
-              <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
-                <h3 class="font-bold text-amber-800 flex items-center gap-2 mb-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                  Master Recovery Phrase
-                </h3>
-                <p class="text-sm text-amber-700 mb-4">Store these 12 words in a secure, offline location. They are the <strong>ONLY</strong> way to recover the root system keys if the server configuration is lost.</p>
-                
-                <div class="grid grid-cols-4 gap-2 bg-white p-4 rounded-xl border border-amber-100 font-mono text-sm">
-                  <div v-for="(word, i) in recoveryPhrase.split(' ')" :key="i" class="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded">
-                    <span class="text-amber-400 text-xs select-none">{{ i + 1 }}.</span>
-                    <span class="font-bold text-amber-900">{{ word }}</span>
-                  </div>
-                </div>
-              </div>
-
               <!-- Manager Invite Links -->
               <div v-if="managerInvites.length > 0" class="bg-surface border border-border rounded-2xl p-6">
                 <h3 class="font-bold text-text-main mb-4">Department Manager Invites</h3>
@@ -275,7 +258,7 @@
 
               <div class="pt-6 flex justify-center">
                 <button @click="finishSetup" class="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-hover transition text-lg w-full">
-                  I have saved the Recovery Phrase. Go to Login →
+                  Go to Login →
                 </button>
               </div>
             </div>
@@ -341,7 +324,6 @@ const igniting = ref(false);
 const statusMsg = ref('');
 const error = ref('');
 const ignitionComplete = ref(false);
-const recoveryPhrase = ref('');
 const managerInvites = ref([]);
 
 const copy = (text) => navigator.clipboard.writeText(text);
@@ -377,7 +359,7 @@ const igniteSystem = async () => {
     const res = await api.post('/setup/ignite', payload);
     
     statusMsg.value = 'Securing Management Keys...';
-    const { wrapped_management_key, recoveryPhrase: phrase, invites } = res.data;
+    const { wrapped_management_key, invites } = res.data;
     
     // Decrypt the operations K_real
     const { unwrapKReal } = await import('../services/cryptoService');
@@ -385,8 +367,7 @@ const igniteSystem = async () => {
     
     // Store it locally for auto-login/usage
     localStorage.setItem('cryptoledger_kreal', rawKReal);
-    
-    recoveryPhrase.value = phrase;
+
     managerInvites.value = invites || [];
     ignitionComplete.value = true;
     

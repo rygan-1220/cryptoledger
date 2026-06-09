@@ -128,17 +128,54 @@ exports.logout = (req, res) => {
   });
 };
 
-exports.me = (req, res) => {
+exports.me = async (req, res) => {
   if (req.session && req.session.user) {
-    res.json({
-      user: req.session.user,
-      settings: {
-        companyName: process.env.COMPANY_NAME || 'CryptoLedger',
-        workspaceId: process.env.WORKSPACE_ID || 'default'
-      }
-    });
+    try {
+      // Fetch latest bank info from DB (may have been updated since login)
+      const result = await db.query(
+        'SELECT bank_name, bank_account_no, account_holder_name FROM users WHERE user_id = $1',
+        [req.session.user.user_id]
+      );
+      const bankInfo = result.rows[0] || {};
+      res.json({
+        user: {
+          ...req.session.user,
+          bank_name: bankInfo.bank_name || null,
+          bank_account_no: bankInfo.bank_account_no || null,
+          account_holder_name: bankInfo.account_holder_name || null
+        },
+        settings: {
+          companyName: process.env.COMPANY_NAME || 'CryptoLedger',
+          workspaceId: process.env.WORKSPACE_ID || 'default'
+        }
+      });
+    } catch (err) {
+      console.error('Me Error:', err);
+      res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
+    }
   } else {
     res.status(401).json({ error: 'Not authenticated', code: 'UNAUTHORIZED' });
+  }
+};
+
+// Update user profile (bank info, etc.)
+exports.updateProfile = async (req, res) => {
+  try {
+    const { bank_name, bank_account_no, account_holder_name } = req.body;
+    await db.query(
+      'UPDATE users SET bank_name=$1, bank_account_no=$2, account_holder_name=$3 WHERE user_id=$4',
+      [bank_name || null, bank_account_no || null, account_holder_name || null, req.session.user.user_id]
+    );
+    // Update session with new bank info
+    if (req.session.user) {
+      req.session.user.bank_name = bank_name || null;
+      req.session.user.bank_account_no = bank_account_no || null;
+      req.session.user.account_holder_name = account_holder_name || null;
+    }
+    res.json({ message: 'Profile updated' });
+  } catch (err) {
+    console.error('Update Profile Error:', err);
+    res.status(500).json({ error: 'Internal server error', code: 'SERVER_ERROR' });
   }
 };
 

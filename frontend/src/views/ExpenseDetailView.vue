@@ -32,47 +32,84 @@
         <!-- Progress Stepper -->
         <div class="bg-surface border border-border rounded-xl p-6">
           <h3 class="text-sm font-bold text-text-main mb-6 uppercase tracking-widest">Approval Progress</h3>
-          <div class="relative flex justify-between items-start max-w-xl mx-auto">
+          <div class="relative flex justify-between items-start max-w-2xl mx-auto">
             <!-- Background line -->
             <div class="absolute top-5 left-0 w-full h-0.5 bg-gray-100 -z-0"></div>
-            
+
             <!-- Step 1: Submission -->
-            <div class="relative z-10 flex flex-col items-center text-center w-32">
+            <div class="relative z-10 flex flex-col items-center text-center w-24">
               <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold mb-2 shadow-lg shadow-primary/20">✓</div>
               <p class="text-xs font-bold text-text-main">Submitted</p>
               <p class="text-[10px] text-text-muted mt-1">{{ formatDate(expense.created_at) }}</p>
             </div>
 
             <!-- Step 2: Dept Manager -->
-            <div class="relative z-10 flex flex-col items-center text-center w-32">
+            <div class="relative z-10 flex flex-col items-center text-center w-24">
               <div :class="[
                 'w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-500 border-2',
-                (['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')) ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 
-                (expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager' ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted')
+                deptPassed ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' :
+                deptRejected ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted'
               ]">
-                <span v-if="['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')">✓</span>
-                <span v-else-if="expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager'">!</span>
+                <span v-if="deptPassed">✓</span>
+                <span v-else-if="deptRejected">!</span>
                 <span v-else>2</span>
               </div>
-              <p :class="['text-xs font-bold', (['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')) ? 'text-text-main' : 'text-text-muted']">Dept Review</p>
-              <p v-if="expense.status === 'rejected' && expense.rejected_by_role === 'dept_manager'" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected by Dept</p>
-              <p v-else-if="['dept_approved','approved'].includes(expense.status) || (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager')" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Approved</p>
+              <p :class="['text-xs font-bold', deptPassed ? 'text-text-main' : 'text-text-muted']">Dept Review</p>
+              <p v-if="deptRejected" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected</p>
+              <p v-else-if="deptPassed" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Approved</p>
             </div>
 
             <!-- Step 3: Finance Manager -->
-            <div class="relative z-10 flex flex-col items-center text-center w-32">
+            <div class="relative z-10 flex flex-col items-center text-center w-24">
               <div :class="[
                 'w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-500 border-2',
-                expense.status === 'approved' ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 
-                (expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager' ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted')
+                financePassed ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' :
+                financeRejected ? 'bg-ember border-ember text-white' : 'bg-white border-gray-200 text-text-muted'
               ]">
-                <span v-if="expense.status === 'approved'">✓</span>
-                <span v-else-if="expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager'">!</span>
+                <span v-if="financePassed">✓</span>
+                <span v-else-if="financeRejected">!</span>
                 <span v-else>3</span>
               </div>
-              <p :class="['text-xs font-bold', expense.status === 'approved' ? 'text-text-main' : 'text-text-muted']">Finance Review</p>
-              <p v-if="expense.status === 'rejected' && expense.rejected_by_role !== 'dept_manager'" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected by Finance</p>
-              <p v-else-if="expense.status === 'approved'" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Final Approved</p>
+              <p :class="['text-xs font-bold', financePassed ? 'text-text-main' : 'text-text-muted']">Finance Review</p>
+              <p v-if="financeRejected" class="text-[10px] text-ember mt-1 font-bold italic uppercase tracking-tighter">Rejected</p>
+              <p v-else-if="financePassed" class="text-[10px] text-primary mt-1 font-medium uppercase tracking-tighter">Approved</p>
+            </div>
+
+            <!-- Step 4: Payout -->
+            <div class="relative z-10 flex flex-col items-center text-center w-24">
+              <div :class="[
+                'w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all duration-500 border-2',
+                payoutDone ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20' :
+                payoutFailed ? 'bg-orange-500 border-orange-500 text-white' :
+                financePassed ? 'bg-white border-primary text-primary' : 'bg-white border-gray-200 text-text-muted'
+              ]">
+                <span v-if="payoutDone">✓</span>
+                <span v-else-if="payoutFailed">!</span>
+                <!-- spinning indicator when payout is in progress (finance_approved but not yet paid/failed) -->
+                <svg v-else-if="financePassed" class="w-5 h-5 animate-spin text-primary" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                <span v-else>4</span>
+              </div>
+              <p :class="['text-xs font-bold', payoutDone ? 'text-green-600' : payoutFailed ? 'text-orange-600' : 'text-text-muted']">Payout</p>
+              <p v-if="payoutDone" class="text-[10px] text-green-600 mt-1 font-medium uppercase tracking-tighter">Paid Out</p>
+              <p v-else-if="payoutFailed" class="text-[10px] text-orange-600 mt-1 font-bold uppercase tracking-tighter">Failed</p>
+              <p v-else-if="financePassed" class="text-[10px] text-primary/60 mt-1 font-medium uppercase tracking-tighter animate-pulse">Processing...</p>
+            </div>
+          </div>
+
+          <!-- Payout Failed Detail Box -->
+          <div v-if="isPayoutFailed" class="mt-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div class="flex items-start gap-3">
+              <div class="p-1 bg-orange-500 text-white rounded mt-0.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-orange-700">Payout Failed</p>
+                <p class="text-sm text-orange-600 mt-1 italic">"{{ expense.rejection_reason }}"</p>
+                <p class="text-xs text-orange-500 mt-1">Finance approved but automatic payout could not be completed. Fix the issue and ask Finance Manager to re-approve.</p>
+              </div>
             </div>
           </div>
 
@@ -168,6 +205,25 @@ const isPrivileged = computed(() =>
   ['finance_manager','admin','ceo'].includes(authStore.user?.role)
 );
 
+// Stepper helpers
+const deptPassed = computed(() =>
+  ['dept_approved','finance_approved','paid','payout_failed'].includes(expense.value?.status) ||
+  (expense.value?.status === 'rejected' && expense.value?.rejected_by_role !== 'dept_manager')
+);
+const deptRejected = computed(() =>
+  expense.value?.status === 'rejected' && expense.value?.rejected_by_role === 'dept_manager'
+);
+const financePassed = computed(() =>
+  ['finance_approved','paid','payout_failed'].includes(expense.value?.status)
+);
+const financeRejected = computed(() =>
+  expense.value?.status === 'rejected' && expense.value?.rejected_by_role !== 'dept_manager'
+);
+const isPaid = computed(() => expense.value?.status === 'paid');
+const isPayoutFailed = computed(() => expense.value?.status === 'payout_failed');
+const payoutDone = computed(() => expense.value?.status === 'paid');
+const payoutFailed = computed(() => expense.value?.status === 'payout_failed');
+
 const fileExtension = computed(() => {
   const mime = expense.value?.file_mime_type || '';
   return mime.split('/')[1] || 'bin';
@@ -229,9 +285,11 @@ const requestSession = async () => {
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' });
 const statusClass = (s) => ({
-  pending:       'bg-yellow-100 text-yellow-700',
-  dept_approved: 'bg-blue-100 text-blue-700',
-  approved:      'bg-green-100 text-green-700',
-  rejected:      'bg-red-100 text-red-700'
+  pending:          'bg-yellow-100 text-yellow-700',
+  dept_approved:    'bg-blue-100 text-blue-700',
+  finance_approved: 'bg-indigo-100 text-indigo-700',
+  paid:             'bg-green-100 text-green-700',
+  payout_failed:    'bg-orange-100 text-orange-700',
+  rejected:         'bg-red-100 text-red-700'
 }[s] || 'bg-gray-100 text-gray-600');
 </script>

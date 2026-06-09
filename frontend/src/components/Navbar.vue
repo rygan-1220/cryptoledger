@@ -22,7 +22,7 @@
         <router-link v-if="isPrivileged" to="/dashboard" class="nav-link" active-class="nav-link-active">Dashboard</router-link>
         <router-link v-if="isPrivileged" to="/admin/expenses" class="nav-link" active-class="nav-link-active">All Expenses</router-link>
         <router-link v-if="isAdminOrCEO" to="/admin/audit-logs" class="nav-link" active-class="nav-link-active">Audit Logs</router-link>
-        <router-link v-if="isAdmin" to="/admin/integrity" class="nav-link" active-class="nav-link-active">Integrity</router-link>
+        <router-link v-if="isAdminOrCEO" to="/admin/integrity" class="nav-link" active-class="nav-link-active">Integrity</router-link>
         <router-link v-if="canManageUsers" to="/admin/users" class="nav-link" active-class="nav-link-active">Users</router-link>
         <router-link v-if="isAdminOrCEO" to="/admin/departments" class="nav-link" active-class="nav-link-active">Departments</router-link>
 
@@ -50,7 +50,6 @@ const isEmployee  = computed(() => user.value && ['employee'].includes(user.valu
 const isManager   = computed(() => user.value && user.value.role === 'dept_manager');
 const isPrivileged= computed(() => user.value && ['finance_manager','admin','ceo'].includes(user.value.role));
 const isAdminOrCEO= computed(() => user.value && ['admin','ceo'].includes(user.value.role));
-const isAdmin     = computed(() => user.value?.role === 'admin');
 const canManageUsers = computed(() => user.value && ['admin','ceo','dept_manager'].includes(user.value.role));
 
 const handleLogout = async () => {

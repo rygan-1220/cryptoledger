@@ -6,12 +6,12 @@ exports.getSummary = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT
-        COUNT(*)                                             AS total_count,
-        COALESCE(SUM(amount), 0)                             AS total_amount,
-        COUNT(*) FILTER (WHERE status = 'pending')           AS pending_count,
-        COUNT(*) FILTER (WHERE status = 'approved')          AS approved_count,
-        COUNT(*) FILTER (WHERE status = 'rejected')          AS rejected_count,
-        COALESCE(SUM(amount) FILTER (WHERE status = 'approved'), 0) AS approved_amount
+        COUNT(*)                                                   AS total_count,
+        COALESCE(SUM(amount), 0)                                   AS total_amount,
+        COUNT(*) FILTER (WHERE status = 'pending')                 AS pending_count,
+        COUNT(*) FILTER (WHERE status = 'paid')                    AS approved_count,
+        COUNT(*) FILTER (WHERE status = 'rejected')                AS rejected_count,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0)    AS approved_amount
       FROM expenses
       WHERE deleted = false
     `);
@@ -28,9 +28,9 @@ exports.getByDepartment = async (req, res) => {
         d.dept_name,
         COUNT(*)                                    AS count,
         COALESCE(SUM(e.amount), 0)                  AS total_amount,
-        COUNT(*) FILTER (WHERE e.status = 'pending')  AS pending,
-        COUNT(*) FILTER (WHERE e.status = 'approved') AS approved,
-        COUNT(*) FILTER (WHERE e.status = 'rejected') AS rejected
+        COUNT(*) FILTER (WHERE e.status = 'pending')   AS pending,
+        COUNT(*) FILTER (WHERE e.status = 'paid')      AS approved,
+        COUNT(*) FILTER (WHERE e.status = 'rejected')  AS rejected
       FROM expenses e
       JOIN departments d ON e.dept_id = d.dept_id
       WHERE e.deleted = false
