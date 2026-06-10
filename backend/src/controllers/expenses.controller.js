@@ -401,7 +401,7 @@ exports.verifyExpense = async (req, res) => {
     const result = await db.query(
       `SELECT e.expense_id, e.user_id, e.dept_id, e.amount, e.layer2_ciphertext,
               e.digital_signature, e.file_hash, e.prev_hash, e.hash, e.created_at,
-              u.bank_name, u.bank_account_no, u.account_holder_name
+              u.has_bank_info
        FROM expenses e
        JOIN users u ON e.user_id = u.user_id
        WHERE e.expense_id = $1 AND e.deleted = false`, [id]
@@ -414,7 +414,7 @@ exports.verifyExpense = async (req, res) => {
       signature_detail: null,
       hash_chain_valid: false,
       hash_chain_detail: null,
-      submitter_has_bank_info: !!(expense.bank_name && expense.bank_account_no && expense.account_holder_name)
+      submitter_has_bank_info: expense.has_bank_info === true
     };
 
     // ── 1. Digital Signature Re-verification ──

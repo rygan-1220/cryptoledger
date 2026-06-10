@@ -43,8 +43,23 @@
           <h2 class="text-xl font-bold">Bank Information</h2>
         </div>
 
+        <!-- Decrypting -->
+        <div v-if="decryptingBank" class="flex items-center gap-3 text-text-muted">
+          <div class="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div>
+          <span class="text-sm">Decrypting bank info…</span>
+        </div>
+
+        <!-- Server has bank info but K_real is missing on this device -->
+        <div v-else-if="serverHasBankInfo && !hasBankInfo && !editingBank" class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p class="text-sm text-amber-800 font-medium mb-1">Bank info stored but encrypted</p>
+          <p class="text-xs text-amber-700 mb-3">K_real not available on this device. Log out and back in to restore your encryption key, or re-enter your bank details.</p>
+          <button @click="startEditBank" class="border border-amber-400 text-amber-800 px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-100 transition">
+            Re-enter Bank Info
+          </button>
+        </div>
+
         <!-- View mode: bank info already saved -->
-        <div v-if="hasBankInfo && !editingBank">
+        <div v-else-if="hasBankInfo && !editingBank">
           <div class="flex items-center gap-2 mb-4">
             <span class="inline-flex items-center gap-1 text-green-700 text-xs font-medium bg-green-50 px-2.5 py-1 rounded-full">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -213,6 +228,9 @@ const savingBank = ref(false);
 const bankSaved = ref(false);
 const bankError = ref('');
 const editingBank = ref(false);
+const decryptingBank = ref(false);
+const bankInfoLoaded = ref(false); // true once we've attempted fetch (even if decryption failed)
+const serverHasBankInfo = ref(false); // from server's has_bank_info flag — plaintext, non-sensitive
 
 const hasBankInfo = computed(() => {
   return !!(bankForm.bank_name || bankForm.bank_account_no || bankForm.account_holder_name);
@@ -228,13 +246,34 @@ const maskedAccountNo = computed(() => {
 const fetchBankInfo = async () => {
   try {
     const res = await api.get('/auth/me');
-    if (res.data.user) {
-      bankForm.bank_name = res.data.user.bank_name || '';
-      bankForm.bank_account_no = res.data.user.bank_account_no || '';
-      bankForm.account_holder_name = res.data.user.account_holder_name || '';
+    const user = res.data.user;
+    serverHasBankInfo.value = user?.has_bank_info || false;
+    if (user && user.bank_info) {
+      // Decrypt the server-blind bank info with K_real
+      const kRealHex = localStorage.getItem('cryptoledger_kreal');
+      if (!kRealHex) {
+        // No K_real — user needs to re-login. Bank info is unreadable.
+        bankInfoLoaded.value = true;
+        return;
+      }
+      decryptingBank.value = true;
+      try {
+        const { decryptLayer1 } = await import('../services/cryptoService');
+        const plaintext = await decryptLayer1(user.bank_info, kRealHex);
+        bankForm.bank_name = plaintext.bank_name || '';
+        bankForm.bank_account_no = plaintext.bank_account_no || '';
+        bankForm.account_holder_name = plaintext.account_holder_name || '';
+      } catch (decErr) {
+        console.error('Failed to decrypt bank info:', decErr);
+        // Leave form empty — user can re-enter
+      } finally {
+        decryptingBank.value = false;
+      }
     }
+    bankInfoLoaded.value = true;
   } catch (e) {
     console.error('Failed to fetch bank info:', e);
+    bankInfoLoaded.value = true;
   }
 };
 
@@ -256,15 +295,24 @@ const saveBankInfo = async () => {
   bankSaved.value = false;
   bankError.value = '';
   try {
-    await api.put('/auth/profile', {
+    const kRealHex = localStorage.getItem('cryptoledger_kreal');
+    if (!kRealHex) throw new Error('K_real not found. Please re-login.');
+
+    const { encryptLayer1 } = await import('../services/cryptoService');
+    const bankInfo = await encryptLayer1({
       bank_name: bankForm.bank_name,
       bank_account_no: bankForm.bank_account_no,
       account_holder_name: bankForm.account_holder_name
+    }, kRealHex);
+
+    await api.put('/auth/profile', {
+      bank_info: bankInfo,
+      has_bank_info: hasBankInfo.value
     });
+
     if (authStore.user) {
-      authStore.user.bank_name = bankForm.bank_name;
-      authStore.user.bank_account_no = bankForm.bank_account_no;
-      authStore.user.account_holder_name = bankForm.account_holder_name;
+      authStore.user.bank_info = bankInfo;
+      authStore.user.has_bank_info = hasBankInfo.value;
     }
     bankSaved.value = true;
     editingBank.value = false;

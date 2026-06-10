@@ -133,16 +133,15 @@ exports.me = async (req, res) => {
     try {
       // Fetch latest bank info from DB (may have been updated since login)
       const result = await db.query(
-        'SELECT bank_name, bank_account_no, account_holder_name FROM users WHERE user_id = $1',
+        'SELECT bank_info, has_bank_info FROM users WHERE user_id = $1',
         [req.session.user.user_id]
       );
-      const bankInfo = result.rows[0] || {};
+      const row = result.rows[0] || {};
       res.json({
         user: {
           ...req.session.user,
-          bank_name: bankInfo.bank_name || null,
-          bank_account_no: bankInfo.bank_account_no || null,
-          account_holder_name: bankInfo.account_holder_name || null
+          bank_info: row.bank_info || null,
+          has_bank_info: row.has_bank_info || false
         },
         settings: {
           companyName: process.env.COMPANY_NAME || 'CryptoLedger',
@@ -158,19 +157,19 @@ exports.me = async (req, res) => {
   }
 };
 
-// Update user profile (bank info, etc.)
+// Update user profile (bank info encrypted client-side — server never sees plaintext)
 exports.updateProfile = async (req, res) => {
   try {
-    const { bank_name, bank_account_no, account_holder_name } = req.body;
+    const { bank_info, has_bank_info } = req.body;
+    // bank_info is an opaque encrypted blob { iv, authTag, ciphertext } — server stores as-is
+    // has_bank_info is a plaintext boolean flag for payout verification
     await db.query(
-      'UPDATE users SET bank_name=$1, bank_account_no=$2, account_holder_name=$3 WHERE user_id=$4',
-      [bank_name || null, bank_account_no || null, account_holder_name || null, req.session.user.user_id]
+      'UPDATE users SET bank_info=$1, has_bank_info=$2 WHERE user_id=$3',
+      [bank_info || null, has_bank_info || false, req.session.user.user_id]
     );
-    // Update session with new bank info
     if (req.session.user) {
-      req.session.user.bank_name = bank_name || null;
-      req.session.user.bank_account_no = bank_account_no || null;
-      req.session.user.account_holder_name = account_holder_name || null;
+      req.session.user.bank_info = bank_info || null;
+      req.session.user.has_bank_info = has_bank_info || false;
     }
     res.json({ message: 'Profile updated' });
   } catch (err) {
