@@ -256,17 +256,6 @@ exports.getExpenseById = async (req, res) => {
       };
     }
 
-    // Log VIEW_PLAINTEXT if privileged
-    if (isPrivileged || isDeptManager) {
-      const client = await db.connect();
-      try {
-        await client.query('BEGIN');
-        await logAction(client, { expense_id: id, action: 'VIEW_PLAINTEXT', actor_id: user.user_id, metadata: { role: user.role } });
-        await client.query('COMMIT');
-      } catch(e) { await client.query('ROLLBACK'); }
-      finally { client.release(); }
-    }
-
     res.json({
       expense: {
         expense_id:       expense.expense_id,
@@ -646,4 +635,28 @@ exports.failPayout = async (req, res) => {
     console.error('Fail Payout Error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
+};
+
+// POST /expenses/:id/log-plaintext-view
+// Client calls this AFTER successful Layer 1 decryption (using local K_real or K_session)
+exports.logPlaintextView = async (req, res) => {
+  const { id } = req.params;
+  const user = req.session.user;
+
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await logAction(client, {
+      expense_id: id,
+      action: 'VIEW_PLAINTEXT',
+      actor_id: user.user_id,
+      metadata: { role: user.role, via: 'client_decrypt' }
+    });
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    console.error('logPlaintextView error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally { client.release(); }
 };

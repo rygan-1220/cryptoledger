@@ -30,6 +30,9 @@ router.get('/department', requireRole(['dept_manager','finance_manager','admin',
 // All expenses (finance/admin/ceo)
 router.get('/all', requireRole(['finance_manager','admin','ceo']), ctrl.getAllExpenses);
 
+// Log plaintext view (client calls after successful Layer 1 decryption)
+router.post('/:id/log-plaintext-view', ctrl.logPlaintextView);
+
 // Single expense detail (server decrypts layer 2, returns layer1_ciphertext to client)
 router.get('/:id', ctrl.getExpenseById);
 
