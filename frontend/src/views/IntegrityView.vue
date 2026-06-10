@@ -4,14 +4,14 @@
       <h1 class="text-3xl font-display font-bold text-text-main">Integrity & Audit</h1>
 
       <!-- Hash Chain Verification -->
-      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+      <div class="bg-surface border border-border rounded p-6 shadow-sm">
         <h2 class="text-xl font-bold text-text-main mb-2">Hash Chain Verification</h2>
         <p class="text-text-muted text-sm mb-4">Recomputes every expense hash and checks the linked chain for tampering.</p>
         <button @click="verifyChain" :disabled="verifying" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-hover font-medium text-sm disabled:opacity-50 transition">
           {{ verifying ? 'Verifying…' : 'Verify Hash Chain' }}
         </button>
 
-        <div v-if="chainResult" class="mt-4 p-4 rounded-lg" :class="chainResult.valid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+        <div v-if="chainResult" class="mt-4 p-4 rounded" :class="chainResult.valid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
           <div class="flex items-center gap-2 font-bold" :class="chainResult.valid ? 'text-green-700' : 'text-red-700'">
             <span v-if="chainResult.valid">✓ Chain Intact</span>
             <span v-else>✗ Tampering Detected!</span>
@@ -25,13 +25,13 @@
       </div>
 
       <!-- Merkle Checkpoint -->
-      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+      <div class="bg-surface border border-border rounded p-6 shadow-sm">
         <h2 class="text-xl font-bold text-text-main mb-2">MTTBA Merkle Checkpoint</h2>
         <p class="text-text-muted text-sm mb-4">Creates a cryptographic snapshot of all new expenses since the last checkpoint using the Merkle Trim Tree-Based Authentication algorithm.</p>
         <button @click="createCheckpoint" :disabled="checkpointing" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-medium text-sm disabled:opacity-50 transition">
           {{ checkpointing ? 'Creating…' : 'Create Merkle Checkpoint' }}
         </button>
-        <div v-if="checkpointResult" class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <div v-if="checkpointResult" class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded">
           <p class="text-purple-700 font-bold text-sm">✓ Checkpoint Created</p>
           <p class="text-xs text-purple-600 mt-1">{{ checkpointResult.record_count }} records included</p>
           <p class="font-mono text-xs text-purple-500 mt-1 break-all">Root: {{ checkpointResult.root_hash }}</p>
@@ -40,7 +40,7 @@
       </div>
 
       <!-- Merkle Root Log -->
-      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+      <div class="bg-surface border border-border rounded p-6 shadow-sm">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold text-text-main">Merkle Roots</h2>
           <button @click="loadRoots" class="text-primary text-sm hover:underline">Refresh</button>
@@ -48,7 +48,7 @@
 
         <div v-if="!roots.length" class="text-text-muted text-sm">No checkpoints yet.</div>
         <div v-else class="space-y-3">
-          <div v-for="r in roots" :key="r.root_id" class="border border-border rounded-lg p-4">
+          <div v-for="r in roots" :key="r.root_id" class="border border-border rounded p-4">
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-mono text-xs text-text-muted">{{ r.root_id }}</p>

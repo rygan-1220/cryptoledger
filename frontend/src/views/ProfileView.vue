@@ -9,9 +9,9 @@
       </div>
 
       <!-- ── Section 1: User Details ── -->
-      <section class="bg-surface rounded-2xl shadow-md border border-border p-6 sm:p-8 mb-6">
+      <section class="bg-surface rounded shadow-md border border-border p-6 sm:p-8 mb-6">
         <div class="flex items-center gap-3 mb-6">
-          <span class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">1</span>
+          <span class="w-9 h-9 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">1</span>
           <h2 class="text-xl font-bold">User Details</h2>
         </div>
 
@@ -37,9 +37,9 @@
       </section>
 
       <!-- ── Section 2: Bank Information ── -->
-      <section class="bg-surface rounded-2xl shadow-md border border-border p-6 sm:p-8 mb-6">
+      <section class="bg-surface rounded shadow-md border border-border p-6 sm:p-8 mb-6">
         <div class="flex items-center gap-3 mb-6">
-          <span class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">2</span>
+          <span class="w-9 h-9 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">2</span>
           <h2 class="text-xl font-bold">Bank Information</h2>
         </div>
 
@@ -68,7 +68,7 @@
             </div>
             <button
               @click="startEditBank"
-              class="shrink-0 border border-border text-text-main px-4 py-2 rounded-xl text-sm font-medium hover:bg-background transition"
+              class="shrink-0 border border-border text-text-main px-4 py-2 rounded text-sm font-medium hover:bg-background transition"
             >
               Edit Bank Info
             </button>
@@ -79,10 +79,10 @@
         <div v-else>
           <p class="text-xs text-text-muted mb-5">Required for expense payout. Your banking details are stored securely.</p>
 
-          <div v-if="bankSaved" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          <div v-if="bankSaved" class="mb-4 p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
             Bank information saved successfully.
           </div>
-          <div v-if="bankError" class="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-ember text-sm">
+          <div v-if="bankError" class="mb-4 p-3 bg-red-50 border border-red-100 rounded text-ember text-sm">
             {{ bankError }}
           </div>
 
@@ -91,7 +91,7 @@
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Bank Name</label>
               <input
                 v-model="bankForm.bank_name"
-                class="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="e.g., Maybank, CIMB, Hong Leong"
               />
             </div>
@@ -99,7 +99,7 @@
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Bank Account No</label>
               <input
                 v-model="bankForm.bank_account_no"
-                class="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Enter your account number"
               />
             </div>
@@ -107,7 +107,7 @@
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Account Holder Name</label>
               <input
                 v-model="bankForm.account_holder_name"
-                class="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Name on the bank account"
               />
             </div>
@@ -115,14 +115,14 @@
               <button
                 @click="saveBankInfo"
                 :disabled="savingBank || !bankFormValid"
-                class="bg-primary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary-hover transition disabled:opacity-50 text-sm"
+                class="bg-primary text-white px-6 py-2.5 rounded font-bold hover:bg-primary-hover transition disabled:opacity-50 text-sm"
               >
                 {{ savingBank ? 'Saving...' : 'Save Bank Info' }}
               </button>
               <button
                 v-if="hasBankInfo"
                 @click="cancelEditBank"
-                class="border border-border text-text-muted px-5 py-2.5 rounded-xl font-medium hover:bg-background transition text-sm"
+                class="border border-border text-text-muted px-5 py-2.5 rounded font-medium hover:bg-background transition text-sm"
               >
                 Cancel
               </button>
@@ -132,9 +132,9 @@
       </section>
 
       <!-- ── Section 3: Security Status ── -->
-      <section class="bg-surface rounded-2xl shadow-md border border-border p-6 sm:p-8 mb-6">
+      <section class="bg-surface rounded shadow-md border border-border p-6 sm:p-8 mb-6">
         <div class="flex items-center gap-3 mb-6">
-          <span class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">3</span>
+          <span class="w-9 h-9 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">3</span>
           <h2 class="text-xl font-bold">Security Status</h2>
         </div>
 
@@ -173,7 +173,7 @@
         </div>
 
         <!-- Password reminder -->
-        <div class="mt-6 bg-amber-50 border border-amber-400 rounded-lg p-3">
+        <div class="mt-6 bg-amber-50 border border-amber-400 rounded p-3">
           <p class="text-amber-900 text-xs leading-relaxed">
             <strong>Your password is your recovery key.</strong> If you forget your password, you won't be able to access encrypted expenses on a new device. Keep it safe.
           </p>
@@ -182,7 +182,7 @@
 
       <!-- Logout -->
       <div class="flex justify-end">
-        <button @click="handleLogout" class="border border-ember text-ember px-5 py-2.5 font-medium rounded-xl hover:bg-ember hover:text-white transition text-sm">
+        <button @click="handleLogout" class="border border-ember text-ember px-5 py-2.5 font-medium rounded hover:bg-ember hover:text-white transition text-sm">
           Logout
         </button>
       </div>

@@ -11,7 +11,7 @@
 
       <div v-else-if="expense" class="space-y-5">
         <!-- Status + meta -->
-        <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="bg-surface border border-border rounded p-6">
           <div class="flex justify-between items-start">
             <div>
               <p class="text-text-muted text-sm mb-1">Expense ID</p>
@@ -45,7 +45,7 @@
         </div>
 
         <!-- Progress Stepper -->
-        <div class="bg-surface border border-border rounded-xl p-6">
+        <div class="bg-surface border border-border rounded p-6">
           <h3 class="text-sm font-bold text-text-main mb-6 uppercase tracking-widest">Approval Progress</h3>
           <div class="relative flex justify-between items-start max-w-2xl mx-auto">
             <!-- Background line -->
@@ -115,7 +115,7 @@
           </div>
 
           <!-- Payout Failed Detail Box -->
-          <div v-if="isPayoutFailed" class="mt-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div v-if="isPayoutFailed" class="mt-8 p-4 bg-orange-50 border border-orange-200 rounded">
             <div class="flex items-start gap-3">
               <div class="p-1 bg-orange-500 text-white rounded mt-0.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
@@ -129,7 +129,7 @@
           </div>
 
           <!-- Rejection Detail Box -->
-          <div v-if="expense.status === 'rejected'" class="mt-8 p-4 bg-red-50 border border-red-100 rounded-lg">
+          <div v-if="expense.status === 'rejected'" class="mt-8 p-4 bg-red-50 border border-red-100 rounded">
             <div class="flex items-start gap-3">
               <div class="p-1 bg-ember text-white rounded mt-0.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -143,7 +143,7 @@
         </div>
 
         <!-- Layer 1 decrypted data -->
-        <div class="bg-blue-50 border border-blue-100 rounded-xl p-6">
+        <div class="bg-blue-50 border border-blue-100 rounded p-6">
           <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 018 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
             Encrypted Details (Layer 1)
@@ -151,7 +151,7 @@
 
           <!-- Privileged user without K_session: show only request button, not decrypt -->
           <div v-if="isPrivileged && !decrypted">
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="bg-amber-50 border border-amber-200 rounded p-4">
               <p class="text-sm text-amber-800 mb-2 font-medium">Privileged Access — K_session Required</p>
               <p class="text-xs text-amber-700 mb-3">You need a temporary session key to decrypt this expense's details.</p>
               <button @click="requestSession" :disabled="sessionLoading" class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 transition text-sm disabled:opacity-50">

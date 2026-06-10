@@ -9,7 +9,7 @@
         <button 
           v-if="isAdmin"
           @click="showCreateModal = true" 
-          class="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primary-hover font-medium transition shadow-lg shadow-primary/20"
+          class="bg-primary text-white px-5 py-2.5 rounded hover:bg-primary-hover font-medium transition shadow-lg shadow-primary/20"
         >
           + Add Department
         </button>
@@ -17,9 +17,9 @@
 
       <!-- Departments Table -->
       <div v-if="loading" class="text-text-muted text-center py-16 italic">Loading departments…</div>
-      <div v-else class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+      <div v-else class="bg-surface border border-border rounded overflow-hidden shadow-sm">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50 border-b border-border text-text-muted uppercase text-xs tracking-widest font-bold">
+          <thead class="bg-gray-50 border-b border-border text-text-muted uppercase text-xs tracking-wide">
             <tr>
               <th class="px-6 py-4 text-left">Department Name</th>
               <th class="px-6 py-4 text-left">Members</th>
@@ -40,7 +40,7 @@
                     @click="deleteDept(dept)"
                     :disabled="parseInt(dept.user_count) > 0"
                     :title="parseInt(dept.user_count) > 0 ? 'Cannot delete — department still has members or records' : 'Delete Department'"
-                    class="p-2 rounded-lg transition-colors"
+                    class="p-2 rounded transition-colors"
                     :class="parseInt(dept.user_count) > 0
                       ? 'text-gray-300 cursor-not-allowed'
                       : 'text-text-main hover:bg-red-50 hover:text-red-500'"
@@ -61,7 +61,7 @@
 
       <!-- Create Modal -->
       <div v-if="showCreateModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-surface border border-border rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="bg-surface border border-border rounded w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
           <div class="p-6 border-b border-border bg-gray-50">
             <h2 class="text-xl font-display font-bold text-text-main">New Department</h2>
             <p class="text-xs text-text-muted mt-1">A secure sub-ledger will be initialized automatically.</p>
@@ -70,12 +70,12 @@
           <form @submit.prevent="handleCreate" class="p-6 space-y-4">
             <div>
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Department Name</label>
-              <input v-model="form.dept_name" required type="text" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="e.g. Marketing" />
+              <input v-model="form.dept_name" required type="text" class="w-full bg-background border border-border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="e.g. Marketing" />
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit" :disabled="creating" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition disabled:opacity-50">
+              <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-border rounded text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
+              <button type="submit" :disabled="creating" class="flex-1 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-primary-hover transition disabled:opacity-50">
                 {{ creating ? 'Creating…' : 'Create' }}
               </button>
             </div>

@@ -5,10 +5,18 @@
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
       <!-- Panel -->
-      <div class="relative bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-8 z-10">
+      <div class="relative bg-surface border border-border rounded shadow-2xl w-full max-w-lg mx-4 z-10">
 
-        <!-- Step Progress -->
-        <div class="space-y-6">
+        <!-- Header -->
+        <div class="p-6 border-b border-border bg-gray-50">
+          <h2 class="text-xl font-display font-bold text-text-main">Payout Verification</h2>
+          <p class="text-xs text-text-muted mt-1">Verifying expense integrity and bank status before processing payment.</p>
+        </div>
+
+        <!-- Body -->
+        <div class="p-8">
+          <!-- Step Progress -->
+          <div class="space-y-6">
           <!-- Step 1: Signature Verification -->
           <div class="flex items-start gap-4">
             <div class="flex-shrink-0 mt-0.5">
@@ -94,7 +102,7 @@
                 <span class="inline-block w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin mr-1 align-middle"></span>
                 Rejecting expense...
               </div>
-              <div v-else-if="payoutRejected" class="mt-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg inline-block">
+              <div v-else-if="payoutRejected" class="mt-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded inline-block">
                 <p class="text-xs font-bold text-orange-600 uppercase">Payout Failed</p>
                 <p class="text-[10px] text-orange-500 mt-0.5">Status set to payout_failed. Fix the issue and ask Finance to re-approve.</p>
               </div>
@@ -114,13 +122,13 @@
                 <span class="inline-block w-4 h-4 border-2 border-gray-300 border-t-primary rounded-full animate-spin mr-1 align-middle"></span>
                 Updating status...
               </div>
-              <div v-else-if="payoutRejected" class="mt-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg inline-block">
+              <div v-else-if="payoutRejected" class="mt-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded inline-block">
                 <p class="text-xs font-bold text-orange-600 uppercase">Payout Failed</p>
                 <p class="text-[10px] text-orange-500 mt-0.5">Status set to payout_failed. Employee must update bank info, then Finance re-approves.</p>
               </div>
             </div>
 
-            <button @click="close" class="mt-4 w-full bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-hover transition">
+            <button @click="close" class="mt-4 w-full bg-primary text-white px-6 py-3 rounded font-bold hover:bg-primary-hover transition">
               Close
             </button>
           </div>
@@ -131,7 +139,7 @@
           <button
             @click="cancelPayout"
             :disabled="cancelling"
-            class="border border-gray-300 text-text-muted px-5 py-2 rounded-lg text-sm font-medium hover:border-ember hover:text-ember transition disabled:opacity-50"
+            class="border border-gray-300 text-text-muted px-5 py-2 rounded text-sm font-medium hover:border-ember hover:text-ember transition disabled:opacity-50"
           >
             {{ cancelling ? 'Cancelling...' : 'Cancel Payout' }}
           </button>
@@ -148,10 +156,11 @@
           </div>
           <h3 class="font-bold text-amber-700">Payout Cancelled</h3>
           <p class="text-xs text-text-muted">Expense reverted to dept_approved.</p>
-          <button @click="onCancelled" class="w-full bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-amber-700 transition text-sm">
+          <button @click="onCancelled" class="w-full bg-amber-600 text-white px-6 py-2.5 rounded font-bold hover:bg-amber-700 transition text-sm">
             Close
           </button>
         </div>
+        </div> <!-- /body -->
       </div>
     </div>
   </Teleport>

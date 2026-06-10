@@ -5,7 +5,7 @@
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="$emit('cancel')"></div>
 
       <!-- Dialog -->
-      <div class="relative bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 z-10">
+      <div class="relative bg-surface border border-border rounded shadow-2xl w-full max-w-md mx-4 p-6 z-10">
         <h3 class="text-lg font-bold text-text-main mb-2">{{ title }}</h3>
         <p class="text-sm text-text-muted mb-4">{{ message }}</p>
 
@@ -14,7 +14,7 @@
           <textarea
             v-model="reason"
             rows="3"
-            class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ember/50 resize-none"
+            class="w-full border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ember/50 resize-none"
             placeholder="Enter rejection reason..."
           ></textarea>
           <p v-if="reasonError" class="text-ember text-xs mt-1">{{ reasonError }}</p>

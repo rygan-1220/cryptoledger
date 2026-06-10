@@ -6,7 +6,7 @@
           <h1 class="text-3xl font-display font-bold text-text-main">User Management</h1>
           <p class="text-text-muted mt-1 text-sm">Create invitations and manage organization access.</p>
         </div>
-        <button @click="showInviteModal = true" class="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primary-hover font-medium transition shadow-lg shadow-primary/20">
+        <button @click="showInviteModal = true" class="bg-primary text-white px-5 py-2.5 rounded hover:bg-primary-hover font-medium transition shadow-lg shadow-primary/20">
           + Invite User
         </button>
       </div>
@@ -15,7 +15,7 @@
       <div class="flex gap-4 mb-6">
         <div class="flex-1 max-w-[200px]">
           <label class="block text-[10px] font-bold text-text-muted uppercase mb-1 ml-1">Filter Role</label>
-          <select v-model="filters.role" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+          <select v-model="filters.role" class="w-full bg-surface border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
             <option value="">All Roles</option>
             <option value="employee">Employee</option>
             <option value="dept_manager">Dept Manager</option>
@@ -26,7 +26,7 @@
         </div>
         <div class="flex-1 max-w-[200px]">
           <label class="block text-[10px] font-bold text-text-muted uppercase mb-1 ml-1">Filter Department</label>
-          <select v-model="filters.dept" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
+          <select v-model="filters.dept" class="w-full bg-surface border border-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition">
             <option value="">All Departments</option>
             <option v-for="d in departments" :key="d.dept_id" :value="d.dept_name">{{ d.dept_name }}</option>
           </select>
@@ -35,9 +35,9 @@
 
       <!-- Users Table -->
       <div v-if="loading" class="text-text-muted text-center py-16 italic">Loading users…</div>
-      <div v-else class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+      <div v-else class="bg-surface border border-border rounded overflow-hidden shadow-sm">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50 border-b border-border text-text-muted uppercase text-xs tracking-widest font-bold">
+          <thead class="bg-gray-50 border-b border-border text-text-muted uppercase text-xs tracking-wide">
             <tr>
               <th class="px-6 py-4 text-left">Username</th>
               <th class="px-6 py-4 text-left">Email</th>
@@ -66,7 +66,7 @@
                   <button 
                     v-if="user.status !== 'pending_invite' && user.user_id !== authStore.user.user_id && canManageUser(user)"
                     @click="toggleActive(user)"
-                    class="p-2 rounded-lg transition-colors text-text-main hover:bg-gray-100"
+                    class="p-2 rounded transition-colors text-text-main hover:bg-gray-100"
                     :title="user.is_active ? 'Deactivate User' : 'Activate User'"
                   >
                     <svg v-if="user.is_active" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -81,7 +81,7 @@
                   <button
                     v-if="user.status === 'pending_invite' && user.invite_link"
                     @click="copyUserInviteLink(user.invite_link)"
-                    class="p-2 rounded-lg transition-colors text-text-main hover:bg-gray-100"
+                    class="p-2 rounded transition-colors text-text-main hover:bg-gray-100"
                     title="Copy Invite Link"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -97,7 +97,7 @@
 
       <!-- Invite Modal -->
       <div v-if="showInviteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-surface border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="bg-surface border border-border rounded w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
           <div class="p-6 border-b border-border bg-gray-50">
             <h2 class="text-xl font-display font-bold text-text-main">Invite New User</h2>
             <p class="text-xs text-text-muted mt-1">A unique setup link will be generated.</p>
@@ -106,16 +106,16 @@
           <form @submit.prevent="handleInvite" class="p-6 space-y-4">
             <div>
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Username</label>
-              <input v-model="form.username" required type="text" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="johndoe" />
+              <input v-model="form.username" required type="text" class="w-full bg-background border border-border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="johndoe" />
             </div>
             <div>
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Email Address</label>
-              <input v-model="form.email" required type="email" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="john@example.com" />
+              <input v-model="form.email" required type="email" class="w-full bg-background border border-border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="john@example.com" />
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-text-muted uppercase mb-1">Role</label>
-                <select v-model="form.role" :disabled="!isAdmin" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
+                <select v-model="form.role" :disabled="!isAdmin" class="w-full bg-background border border-border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
                   <option value="employee">Employee</option>
                   <option v-if="isAdmin" value="dept_manager">Dept Manager</option>
                   <option v-if="isAdmin" value="finance_manager">Finance Manager</option>
@@ -125,13 +125,13 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-text-muted uppercase mb-1">Department</label>
-                <select v-model="form.dept_id" :disabled="isForcedDept || isDeptManager" class="w-full bg-background border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
+                <select v-model="form.dept_id" :disabled="isForcedDept || isDeptManager" class="w-full bg-background border border-border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition disabled:opacity-70 disabled:cursor-not-allowed">
                   <option v-for="d in departments" :key="d.dept_id" :value="d.dept_id">{{ d.dept_name }}</option>
                 </select>
               </div>
             </div>
 
-            <div v-if="generatedLink" class="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/20 space-y-2">
+            <div v-if="generatedLink" class="mt-6 p-4 bg-primary/5 rounded border border-primary/20 space-y-2">
               <p class="text-xs font-bold text-primary uppercase">Invitation Link Generated:</p>
               <div class="flex gap-2">
                 <input :value="generatedLink" readonly class="flex-1 bg-white border border-border rounded px-2 py-1 text-[10px] font-mono focus:outline-none" />
@@ -141,8 +141,8 @@
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
-              <button type="submit" :disabled="inviting" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition disabled:opacity-50">
+              <button type="button" @click="closeModal" class="flex-1 px-4 py-2 border border-border rounded text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
+              <button type="submit" :disabled="inviting" class="flex-1 bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-primary-hover transition disabled:opacity-50">
                 {{ inviting ? 'Creating…' : (generatedLink ? 'Create Another' : 'Generate Link') }}
               </button>
             </div>

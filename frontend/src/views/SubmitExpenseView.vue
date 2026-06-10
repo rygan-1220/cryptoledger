@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-background text-text-main p-8">
-    <div class="max-w-2xl mx-auto bg-surface p-8 rounded-xl shadow-md border border-border">
+    <div class="max-w-2xl mx-auto bg-surface p-8 rounded shadow-md border border-border">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-display font-bold text-text-main">Submit Expense</h1>
         <router-link to="/expenses" class="text-primary hover:underline">Back to My Expenses</router-link>
@@ -15,15 +15,15 @@
           </h3>
           <div class="space-y-4">
             <div>
-              <label class="block font-medium mb-1">Vendor Name</label>
-              <input v-model="form.vendor_name" type="text" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required />
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Vendor Name</label>
+              <input v-model="form.vendor_name" type="text" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required />
             </div>
             <div>
-              <label class="block font-medium mb-1">Description</label>
-              <textarea v-model="form.description" rows="3" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required></textarea>
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Description</label>
+              <textarea v-model="form.description" rows="3" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required></textarea>
             </div>
             <div>
-              <label class="block font-medium mb-1">Receipt File (JPEG / PNG / PDF, max 5 MB)</label>
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Receipt File (JPEG / PNG / PDF, max 5 MB)</label>
               <input @change="handleFileSelect" type="file" accept="image/jpeg,image/png,application/pdf" class="w-full border border-border rounded px-4 py-2" required />
               <p v-if="fileInfo" class="text-text-muted text-sm mt-1">
                 Selected: {{ fileInfo.name }} ({{ (fileInfo.size / 1024).toFixed(1) }} KB) · {{ fileInfo.type }}
@@ -40,20 +40,20 @@
           </h3>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block font-medium mb-1">Amount ($)</label>
-              <input v-model.number="form.amount" type="number" step="0.01" min="0.01" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required />
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Amount ($)</label>
+              <input v-model.number="form.amount" type="number" step="0.01" min="0.01" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required />
             </div>
             <div>
-              <label class="block font-medium mb-1">Date</label>
-              <input v-model="form.date" type="date" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required />
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Date</label>
+              <input v-model="form.date" type="date" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required />
             </div>
             <div>
-              <label class="block font-medium mb-1">Project ID</label>
-              <input v-model="form.project_id" type="text" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required />
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Project ID</label>
+              <input v-model="form.project_id" type="text" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required />
             </div>
             <div>
-              <label class="block font-medium mb-1">Category</label>
-              <select v-model="form.category" class="w-full border border-border rounded px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" required>
+              <label class="block text-xs font-bold text-text-muted uppercase mb-1">Category</label>
+              <select v-model="form.category" class="w-full bg-background border border-border rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" required>
                 <option value="Office Supplies">Office Supplies</option>
                 <option value="Travel">Travel</option>
                 <option value="Meals">Meals</option>
@@ -76,7 +76,7 @@
         <div v-if="error" class="text-ember text-sm">{{ error }}</div>
         <div v-if="success" class="text-green-600 font-medium text-sm">✓ Expense submitted successfully!</div>
 
-        <button type="submit" :disabled="loading" class="w-full bg-primary text-white font-medium py-3 rounded hover:bg-primary-hover transition disabled:opacity-50">
+        <button type="submit" :disabled="loading" class="w-full bg-primary text-white font-medium py-2.5 rounded hover:bg-primary-hover transition disabled:opacity-50">
           {{ loading ? 'Processing…' : 'Submit Secure Expense' }}
         </button>
       </form>

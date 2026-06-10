@@ -12,7 +12,7 @@
     </button>
 
     <!-- Dropdown -->
-    <div v-if="open" class="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg py-1">
+    <div v-if="open" class="absolute z-50 mt-1 w-full bg-surface border border-border rounded shadow-lg py-1">
       <div class="max-h-48 overflow-y-auto">
         <label
           v-for="opt in options"

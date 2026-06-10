@@ -11,19 +11,19 @@
 
       <!-- Summary Cards -->
       <div v-if="summary" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-surface border border-border rounded-xl p-5 shadow-sm">
+        <div class="bg-surface border border-border rounded p-5 shadow-sm">
           <p class="text-xs text-text-muted uppercase font-medium mb-1">Total Expenses</p>
           <p class="text-3xl font-bold text-text-main">{{ summary.total_count }}</p>
         </div>
-        <div class="bg-surface border border-border rounded-xl p-5 shadow-sm">
+        <div class="bg-surface border border-border rounded p-5 shadow-sm">
           <p class="text-xs text-text-muted uppercase font-medium mb-1">Total Amount</p>
           <p class="text-3xl font-bold text-text-main">${{ fmtNum(summary.total_amount) }}</p>
         </div>
-        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 shadow-sm">
+        <div class="bg-yellow-50 border border-yellow-200 rounded p-5 shadow-sm">
           <p class="text-xs text-yellow-600 uppercase font-medium mb-1">Pending</p>
           <p class="text-3xl font-bold text-yellow-700">{{ summary.pending_count }}</p>
         </div>
-        <div class="bg-green-50 border border-green-200 rounded-xl p-5 shadow-sm">
+        <div class="bg-green-50 border border-green-200 rounded p-5 shadow-sm">
           <p class="text-xs text-green-600 uppercase font-medium mb-1">Approved ($)</p>
           <p class="text-3xl font-bold text-green-700">${{ fmtNum(summary.approved_amount) }}</p>
         </div>
@@ -32,7 +32,7 @@
       <!-- Charts Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Status Donut -->
-        <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div class="bg-surface border border-border rounded p-6 shadow-sm">
           <h3 class="font-bold text-text-main mb-4">Expense Status</h3>
           <div class="relative h-52 flex items-center justify-center">
             <canvas ref="donutRef"></canvas>
@@ -40,7 +40,7 @@
         </div>
 
         <!-- Monthly Trend -->
-        <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div class="bg-surface border border-border rounded p-6 shadow-sm">
           <h3 class="font-bold text-text-main mb-4">Monthly Spend</h3>
           <div class="h-52">
             <canvas ref="trendRef"></canvas>
@@ -51,7 +51,7 @@
       <!-- By Department Table + By Category Chart -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Dept Table -->
-        <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div class="bg-surface border border-border rounded p-6 shadow-sm">
           <h3 class="font-bold text-text-main mb-4">By Department</h3>
           <table class="w-full text-sm">
             <thead class="text-text-muted uppercase text-xs">
@@ -77,7 +77,7 @@
         </div>
 
         <!-- By Category Bar -->
-        <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+        <div class="bg-surface border border-border rounded p-6 shadow-sm">
           <h3 class="font-bold text-text-main mb-4">By Category</h3>
           <div class="h-52">
             <canvas ref="categoryRef"></canvas>
@@ -86,7 +86,7 @@
       </div>
 
       <!-- Top Projects -->
-      <div class="bg-surface border border-border rounded-xl p-6 shadow-sm">
+      <div class="bg-surface border border-border rounded p-6 shadow-sm">
         <h3 class="font-bold text-text-main mb-4">Top Projects</h3>
         <table class="w-full text-sm">
           <thead class="text-text-muted uppercase text-xs">

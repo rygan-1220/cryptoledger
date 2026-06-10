@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-display font-bold text-text-main mb-6">Department Expenses</h1>
 
       <!-- Filters -->
-      <div class="bg-surface border border-border rounded-xl p-4 mb-6 flex gap-4 flex-wrap items-start">
+      <div class="bg-surface border border-border rounded p-4 mb-6 flex gap-4 flex-wrap items-start">
         <div class="w-48">
           <p class="text-xs text-text-muted mb-1">Status</p>
           <FilterDropdown
@@ -24,10 +24,10 @@
       </div>
 
       <div v-if="loading" class="text-text-muted text-center py-16">Loading…</div>
-      <div v-else-if="!expenses.length" class="bg-surface border border-border rounded-xl p-16 text-center">
+      <div v-else-if="!expenses.length" class="bg-surface border border-border rounded p-16 text-center">
         <p class="text-text-muted">No department expenses found.</p>
       </div>
-      <div v-else class="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
+      <div v-else class="bg-surface border border-border rounded overflow-hidden shadow-sm">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b border-border text-text-muted uppercase text-xs tracking-wide">
             <tr>
@@ -64,8 +64,8 @@
         <div class="flex justify-between items-center px-5 py-3 border-t border-border text-sm text-text-muted">
           <span>Showing {{ expenses.length }} of {{ total }}</span>
           <div class="flex gap-2">
-            <button @click="changePage(page-1)" :disabled="page<=1" class="px-3 py-1 rounded border border-border disabled:opacity-40">Prev</button>
-            <button @click="changePage(page+1)" :disabled="expenses.length < limit" class="px-3 py-1 rounded border border-border disabled:opacity-40">Next</button>
+            <button @click="changePage(page-1)" :disabled="page<=1" class="px-3 py-1 rounded border border-border disabled:opacity-40 hover:bg-gray-50">Prev</button>
+            <button @click="changePage(page+1)" :disabled="expenses.length < limit" class="px-3 py-1 rounded border border-border disabled:opacity-40 hover:bg-gray-50">Next</button>
           </div>
         </div>
       </div>

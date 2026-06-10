@@ -7,14 +7,14 @@
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-surface py-8 px-4 border border-border shadow-2xl rounded-2xl sm:px-10">
+      <div class="bg-surface py-8 px-4 border border-border shadow-2xl rounded sm:px-10">
         
         <div v-if="verifying" class="text-center py-8">
           <p class="text-text-muted animate-pulse italic">Verifying invitation…</p>
         </div>
 
         <div v-else-if="inviteData" class="space-y-6">
-          <div class="p-4 bg-gray-50 border border-border rounded-xl">
+          <div class="p-4 bg-gray-50 border border-border rounded">
             <p class="text-[10px] font-bold text-text-muted uppercase mb-1">Invited User</p>
             <p class="text-sm font-medium text-text-main">{{ inviteData.username }} ({{ inviteData.email }})</p>
             <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">{{ inviteData.role }} | {{ inviteData.dept_id.slice(0,8) }}…</p>
@@ -23,15 +23,15 @@
           <form @submit.prevent="handleSubmit" class="space-y-5">
             <div>
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Set Your Password</label>
-              <input v-model="password" required type="password" class="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="Min 8 characters" />
+              <input v-model="password" required type="password" class="w-full bg-background border border-border rounded px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="Min 8 characters" />
             </div>
 
             <div>
               <label class="block text-xs font-bold text-text-muted uppercase mb-1">Confirm Password</label>
-              <input v-model="confirmPassword" required type="password" class="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="••••••••" />
+              <input v-model="confirmPassword" required type="password" class="w-full bg-background border border-border rounded px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition" placeholder="••••••••" />
             </div>
 
-            <div v-if="status" class="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+            <div v-if="status" class="p-4 bg-primary/5 border border-primary/20 rounded">
               <p class="text-xs text-primary font-medium flex items-center gap-2">
                 <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 {{ status }}
@@ -40,7 +40,7 @@
 
             <div v-if="error" class="text-ember text-xs font-medium text-center">{{ error }}</div>
 
-            <button type="submit" :disabled="submitting || !passwordsMatch" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none transition disabled:opacity-50">
+            <button type="submit" :disabled="submitting || !passwordsMatch" class="w-full flex justify-center py-3 px-4 border border-transparent rounded shadow-lg text-sm font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none transition disabled:opacity-50">
               {{ submitting ? 'Processing…' : 'Complete Registration' }}
             </button>
           </form>
