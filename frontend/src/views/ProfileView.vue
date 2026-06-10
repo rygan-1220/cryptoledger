@@ -59,7 +59,7 @@
               </div>
               <div>
                 <span class="block text-xs font-bold text-text-muted uppercase mb-0.5">Account No.</span>
-                <span class="text-text-main text-sm font-medium">{{ maskedAccountNo }}</span>
+                <span class="text-text-main text-sm font-medium">{{ bankForm.bank_account_no }}</span>
               </div>
               <div>
                 <span class="block text-xs font-bold text-text-muted uppercase mb-0.5">Account Holder</span>
@@ -114,7 +114,7 @@
             <div class="flex gap-2 pt-1">
               <button
                 @click="saveBankInfo"
-                :disabled="savingBank"
+                :disabled="savingBank || !bankFormValid"
                 class="bg-primary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary-hover transition disabled:opacity-50 text-sm"
               >
                 {{ savingBank ? 'Saving...' : 'Save Bank Info' }}
@@ -213,10 +213,17 @@ const savingBank = ref(false);
 const bankSaved = ref(false);
 const bankError = ref('');
 const editingBank = ref(false);
-const decryptingBank = ref(false);
+const bankInfoLoaded = ref(false); // true only after successful fetch or save (prevents auto-switch from edit → view mid-typing)
 
 const hasBankInfo = computed(() => {
-  return !!(bankForm.bank_name || bankForm.bank_account_no || bankForm.account_holder_name);
+  return bankInfoLoaded.value;
+});
+
+const bankFormValid = computed(() => {
+  const name = bankForm.bank_name.trim();
+  const accNo = bankForm.bank_account_no.trim();
+  const holder = bankForm.account_holder_name.trim();
+  return name.length >= 2 && accNo.length >= 5 && holder.length >= 2;
 });
 
 const maskedAccountNo = computed(() => {
@@ -239,6 +246,7 @@ const fetchBankInfo = async () => {
         bankForm.bank_name = plaintext.bank_name || '';
         bankForm.bank_account_no = plaintext.bank_account_no || '';
         bankForm.account_holder_name = plaintext.account_holder_name || '';
+        bankInfoLoaded.value = true;
       } catch (_) { /* silently fail — user re-enters */ }
     }
   } catch (_) { /* silently fail */ }
@@ -262,19 +270,21 @@ const saveBankInfo = async () => {
   bankSaved.value = false;
   bankError.value = '';
   try {
+    if (!bankFormValid.value) throw new Error('Please fill in all bank fields.');
+
     const kRealHex = localStorage.getItem('cryptoledger_kreal');
     if (!kRealHex) throw new Error('Encryption key not found. Please re-login.');
 
     const { encryptLayer1 } = await import('../services/cryptoService');
     const bankInfo = await encryptLayer1({
-      bank_name: bankForm.bank_name,
-      bank_account_no: bankForm.bank_account_no,
-      account_holder_name: bankForm.account_holder_name
+      bank_name: bankForm.bank_name.trim(),
+      bank_account_no: bankForm.bank_account_no.trim(),
+      account_holder_name: bankForm.account_holder_name.trim()
     }, kRealHex);
 
     await api.put('/auth/profile', {
       bank_info: bankInfo,
-      has_bank_info: hasBankInfo.value
+      has_bank_info: true
     });
 
     if (authStore.user) {
@@ -283,6 +293,7 @@ const saveBankInfo = async () => {
     }
     bankSaved.value = true;
     editingBank.value = false;
+    bankInfoLoaded.value = true;
     setTimeout(() => { bankSaved.value = false; }, 4000);
   } catch (e) {
     bankError.value = e.response?.data?.error || e.message || 'Failed to save bank info';

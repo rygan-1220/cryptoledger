@@ -137,10 +137,20 @@ exports.me = async (req, res) => {
         [req.session.user.user_id]
       );
       const row = result.rows[0] || {};
+
+      // BYTEA returns a Buffer — convert back to the { iv, authTag, ciphertext } object
+      let bankInfo = null;
+      if (row.bank_info) {
+        try {
+          const str = Buffer.isBuffer(row.bank_info) ? row.bank_info.toString('utf-8') : row.bank_info;
+          bankInfo = JSON.parse(str);
+        } catch (_) { bankInfo = null; }
+      }
+
       res.json({
         user: {
           ...req.session.user,
-          bank_info: row.bank_info || null,
+          bank_info: bankInfo,
           has_bank_info: row.has_bank_info || false
         },
         settings: {
@@ -161,11 +171,11 @@ exports.me = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const { bank_info, has_bank_info } = req.body;
-    // bank_info is an opaque encrypted blob { iv, authTag, ciphertext } — server stores as-is
-    // has_bank_info is a plaintext boolean flag for payout verification
+    // bank_info is { iv, authTag, ciphertext } — stringify for BYTEA storage
+    const bankInfoStr = bank_info ? JSON.stringify(bank_info) : null;
     await db.query(
       'UPDATE users SET bank_info=$1, has_bank_info=$2 WHERE user_id=$3',
-      [bank_info || null, has_bank_info || false, req.session.user.user_id]
+      [bankInfoStr, has_bank_info || false, req.session.user.user_id]
     );
     if (req.session.user) {
       req.session.user.bank_info = bank_info || null;
