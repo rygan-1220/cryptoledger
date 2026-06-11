@@ -256,6 +256,28 @@ exports.getExpenseById = async (req, res) => {
       };
     }
 
+    // ── Approval Timeline (from audit log, graceful fallback) ──
+    let timeline = [];
+    try {
+      const timelineRes = await db.query(
+        `SELECT l.action, l.actor_id, l.timestamp, COALESCE(u.username, l.actor_id::text) AS actor_name
+         FROM expense_audit_log l
+         LEFT JOIN users u ON l.actor_id = u.user_id
+         WHERE l.expense_id = $1
+           AND l.action IN ('CREATE','DEPT_APPROVE','DEPT_REJECT','FINANCE_APPROVE','FINANCE_REJECT','PAYOUT_SUCCESS','FAIL_PAYOUT')
+         ORDER BY l.timestamp ASC`, [id]
+      );
+      timeline = timelineRes.rows.map(r => ({
+        action: r.action,
+        actor_id: r.actor_id,
+        actor_name: r.actor_name,
+        timestamp: r.timestamp
+      }));
+    } catch (e) {
+      // audit log table might not exist yet — timeline stays empty, page still loads
+      console.warn('Timeline query failed (non-fatal):', e.message);
+    }
+
     res.json({
       expense: {
         expense_id:       expense.expense_id,
@@ -275,6 +297,7 @@ exports.getExpenseById = async (req, res) => {
         employee_name:    expense.employee_name,
         dept_name:        expense.dept_name
       },
+      timeline,
       layer1_ciphertext,   // for client-side Layer 1 decryption using K_real
       encrypted_receipt:   receiptData
     });

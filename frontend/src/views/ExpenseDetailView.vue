@@ -66,18 +66,22 @@
           <div class="p-5 sm:p-6">
             <h4 class="text-[10px] font-bold text-text-muted uppercase tracking-wide mb-5">Progress</h4>
 
-            <div class="relative flex justify-between items-start max-w-xl mx-auto">
+            <div class="relative flex justify-between items-start max-w-2xl mx-auto">
               <div class="absolute top-3.5 left-0 w-full h-px bg-gray-200"></div>
 
               <!-- Step 1: Submitted (always done) -->
-              <div class="relative z-10 flex flex-col items-center text-center" style="width:60px">
+              <div class="relative z-10 flex flex-col items-center text-center min-w-[72px]">
                 <div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold">✓</div>
                 <p class="text-[10px] font-bold text-text-main mt-1.5 leading-tight">Submitted</p>
-                <p class="text-[9px] text-text-muted leading-tight">{{ formatDate(expense.created_at) }}</p>
+                <template v-if="submitStep">
+                  <p class="text-[9px] text-text-muted leading-tight">by {{ actorDisplay(submitStep) }}</p>
+                  <p class="text-[9px] text-text-muted leading-tight">{{ formatDateTime(submitStep.timestamp) }}</p>
+                </template>
+                <p v-else class="text-[9px] text-text-muted leading-tight">{{ formatDate(expense.created_at) }}</p>
               </div>
 
               <!-- Step 2: Dept -->
-              <div class="relative z-10 flex flex-col items-center text-center" style="width:60px">
+              <div class="relative z-10 flex flex-col items-center text-center min-w-[72px]">
                 <div :class="[
                   'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
                   deptPassed ? 'bg-primary text-white' :
@@ -88,12 +92,13 @@
                   <span v-else>2</span>
                 </div>
                 <p :class="['text-[10px] font-bold mt-1.5 leading-tight', deptPassed ? 'text-text-main' : 'text-text-muted']">Dept</p>
-                <p v-if="deptRejected" class="text-[9px] text-ember font-bold uppercase leading-tight">Rejected</p>
-                <p v-else-if="deptPassed" class="text-[9px] text-primary uppercase leading-tight">Approved</p>
+                <p v-if="deptStep" class="text-[9px]" :class="deptRejected ? 'text-ember' : 'text-text-muted'">by {{ actorDisplay(deptStep) }}</p>
+                <p v-if="deptStep" class="text-[9px] text-text-muted leading-tight">{{ formatDateTime(deptStep.timestamp) }}</p>
+                <p v-else-if="deptRejected" class="text-[9px] text-ember font-bold uppercase leading-tight">Rejected</p>
               </div>
 
               <!-- Step 3: Finance -->
-              <div class="relative z-10 flex flex-col items-center text-center" style="width:60px">
+              <div class="relative z-10 flex flex-col items-center text-center min-w-[72px]">
                 <div :class="[
                   'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
                   financePassed ? 'bg-primary text-white' :
@@ -104,12 +109,13 @@
                   <span v-else>3</span>
                 </div>
                 <p :class="['text-[10px] font-bold mt-1.5 leading-tight', financePassed ? 'text-text-main' : 'text-text-muted']">Finance</p>
-                <p v-if="financeRejected" class="text-[9px] text-ember font-bold uppercase leading-tight">Rejected</p>
-                <p v-else-if="financePassed" class="text-[9px] text-primary uppercase leading-tight">Approved</p>
+                <p v-if="financeStep" class="text-[9px]" :class="financeRejected ? 'text-ember' : 'text-text-muted'">by {{ actorDisplay(financeStep) }}</p>
+                <p v-if="financeStep" class="text-[9px] text-text-muted leading-tight">{{ formatDateTime(financeStep.timestamp) }}</p>
+                <p v-else-if="financeRejected" class="text-[9px] text-ember font-bold uppercase leading-tight">Rejected</p>
               </div>
 
               <!-- Step 4: Payout -->
-              <div class="relative z-10 flex flex-col items-center text-center" style="width:60px">
+              <div class="relative z-10 flex flex-col items-center text-center min-w-[72px]">
                 <div :class="[
                   'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
                   payoutDone ? 'bg-green-500 text-white' :
@@ -122,7 +128,9 @@
                   <span v-else>4</span>
                 </div>
                 <p :class="['text-[10px] font-bold mt-1.5 leading-tight', payoutDone ? 'text-green-600' : payoutFailed ? 'text-orange-600' : 'text-text-muted']">Payout</p>
-                <p v-if="payoutDone" class="text-[9px] text-green-600 uppercase leading-tight">Paid</p>
+                <p v-if="payoutStep" class="text-[9px] text-text-muted leading-tight">by {{ actorDisplay(payoutStep) }}</p>
+                <p v-if="payoutStep" class="text-[9px] text-text-muted leading-tight">{{ formatDateTime(payoutStep.timestamp) }}</p>
+                <p v-else-if="payoutDone" class="text-[9px] text-green-600 uppercase leading-tight">Paid</p>
                 <p v-else-if="payoutFailed" class="text-[9px] text-orange-600 font-bold uppercase leading-tight">Failed</p>
                 <p v-else-if="financePassed" class="text-[9px] text-primary/60 uppercase leading-tight">Pending</p>
               </div>
@@ -282,6 +290,7 @@ const payoutEmployeeName = ref('');
 
 let layer1Raw = null;   // { iv, authTag, ciphertext } from server
 let encReceipt= null;   // { iv, authTag, ciphertext, mime_type } from server
+const timeline = ref([]);
 
 const isPrivileged = computed(() =>
   ['finance_manager','admin','ceo'].includes(authStore.user?.role)
@@ -346,10 +355,28 @@ const financePassed = computed(() =>
 const financeRejected = computed(() =>
   expense.value?.status === 'rejected' && expense.value?.rejected_by_role !== 'dept_manager'
 );
-const isPaid = computed(() => expense.value?.status === 'paid');
 const isPayoutFailed = computed(() => expense.value?.status === 'payout_failed');
 const payoutDone = computed(() => expense.value?.status === 'paid');
 const payoutFailed = computed(() => expense.value?.status === 'payout_failed');
+
+// ── Timeline helpers ─────────────────────────────────────────────────────────
+const findStep = (actions) => timeline.value.find(t => actions.includes(t.action));
+const submitStep    = computed(() => findStep(['CREATE']));
+const deptStep      = computed(() => findStep(['DEPT_APPROVE', 'DEPT_REJECT']));
+const financeStep   = computed(() => findStep(['FINANCE_APPROVE', 'FINANCE_REJECT']));
+const payoutStep    = computed(() => findStep(['PAYOUT_SUCCESS', 'FAIL_PAYOUT']));
+
+const actorDisplay = (step) => {
+  if (!step) return '';
+  return step.actor_id === authStore.user?.user_id ? 'you' : step.actor_name;
+};
+
+const formatDateTime = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-MY', { day:'2-digit', month:'short', year:'numeric' })
+    + ', ' + d.toLocaleTimeString('en-MY', { hour:'2-digit', minute:'2-digit', hour12:true });
+};
 
 const fileExtension = computed(() => {
   const mime = expense.value?.file_mime_type || '';
@@ -363,6 +390,7 @@ const loadExpense = async () => {
     expense.value    = data.expense;
     layer1Raw        = data.layer1_ciphertext;
     encReceipt       = data.encrypted_receipt;
+    timeline.value   = data.timeline || [];
   } catch (e) {
     error.value = e.message || 'Failed to load expense';
     throw e;
