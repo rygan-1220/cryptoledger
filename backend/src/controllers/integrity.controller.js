@@ -1,57 +1,64 @@
 const crypto = require('crypto');
 const db = require('../config/db');
-const { calculateExpenseHash } = require('../services/hashChain');
+const { calculateExpenseHash, GENESIS_HASH } = require('../services/hashChain');
 const { buildMTTBA } = require('../services/merkleService');
 const { logAction } = require('../services/auditService');
+
+// Shared hash chain verification — returns result object, does NOT log or send response
+async function runHashChainVerification() {
+  const result = await db.query(
+    `SELECT expense_id, amount, dept_id, prev_hash, hash, created_at
+     FROM expenses
+     ORDER BY created_at ASC`  // include deleted records intentionally
+  );
+  const records = result.rows;
+
+  if (records.length === 0) {
+    return { valid: true, checked: 0 };
+  }
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const expectedHash = calculateExpenseHash(r.expense_id, r.prev_hash, r.amount, r.dept_id, new Date(r.created_at));
+
+    // Check self-hash integrity
+    if (expectedHash !== r.hash) {
+      return {
+        valid: false,
+        checked: i + 1,
+        broken_at: r.expense_id,
+        reason: `Hash mismatch at record ${i + 1}`
+      };
+    }
+
+    // Check chain link (prev_hash must match previous record's hash)
+    if (i === 0) {
+      if (r.prev_hash !== GENESIS_HASH) {
+        return {
+          valid: false, checked: 1, broken_at: r.expense_id,
+          reason: 'First record does not reference genesis hash'
+        };
+      }
+    } else {
+      if (r.prev_hash !== records[i - 1].hash) {
+        return {
+          valid: false, checked: i + 1, broken_at: r.expense_id,
+          reason: `Chain broken at record ${i + 1}: prev_hash mismatch`
+        };
+      }
+    }
+  }
+
+  return { valid: true, checked: records.length };
+}
 
 // POST /api/integrity/verify-chain
 exports.verifyChain = async (req, res) => {
   const user = req.session.user;
   try {
-    const result = await db.query(
-      `SELECT expense_id, amount, dept_id, prev_hash, hash, created_at
-       FROM expenses
-       ORDER BY created_at ASC`  // include deleted records intentionally
-    );
-    const records = result.rows;
+    const verification = await runHashChainVerification();
 
-    if (records.length === 0) return res.json({ valid: true, checked: 0, message: 'No records to verify' });
-
-    // Verify first record uses genesis hash
-    const GENESIS = '0'.repeat(64);
-    for (let i = 0; i < records.length; i++) {
-      const r = records[i];
-      const expectedHash = calculateExpenseHash(r.expense_id, r.prev_hash, r.amount, r.dept_id, new Date(r.created_at));
-
-      // Check self-hash integrity
-      if (expectedHash !== r.hash) {
-        return res.json({
-          valid: false,
-          checked: i + 1,
-          broken_at: r.expense_id,
-          reason: `Hash mismatch at record ${i + 1}`
-        });
-      }
-
-      // Check chain link (prev_hash must match previous record's hash)
-      if (i === 0) {
-        if (r.prev_hash !== GENESIS) {
-          return res.json({
-            valid: false, checked: 1, broken_at: r.expense_id,
-            reason: 'First record does not reference genesis hash'
-          });
-        }
-      } else {
-        if (r.prev_hash !== records[i - 1].hash) {
-          return res.json({
-            valid: false, checked: i + 1, broken_at: r.expense_id,
-            reason: `Chain broken at record ${i + 1}: prev_hash mismatch`
-          });
-        }
-      }
-    }
-
-    // Log the verification
+    // Always log the verification result — success or failure
     const client = await db.connect();
     try {
       await client.query('BEGIN');
@@ -59,13 +66,22 @@ exports.verifyChain = async (req, res) => {
         expense_id: null,
         action: 'VERIFY',
         actor_id: user.user_id,
-        metadata: { checked: records.length, result: 'valid' }
+        metadata: {
+          checked: verification.checked,
+          result: verification.valid ? 'valid' : 'invalid',
+          ...(verification.broken_at && { broken_at: verification.broken_at }),
+          ...(verification.reason && { reason: verification.reason })
+        }
       });
       await client.query('COMMIT');
     } catch (e) { await client.query('ROLLBACK'); }
     finally { client.release(); }
 
-    res.json({ valid: true, checked: records.length });
+    if (verification.checked === 0) {
+      return res.json({ valid: true, checked: 0, message: 'No records to verify' });
+    }
+
+    res.json(verification);
   } catch (err) {
     console.error('Chain verify error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -76,6 +92,14 @@ exports.verifyChain = async (req, res) => {
 exports.createMerkleCheckpoint = async (req, res) => {
   const user = req.session.user;
   try {
+    // Gate: verify the full hash chain before checkpointing
+    const verification = await runHashChainVerification();
+    if (!verification.valid) {
+      return res.status(400).json({
+        error: `Cannot create checkpoint: hash chain integrity check failed at record ${verification.checked} — ${verification.reason}`
+      });
+    }
+
     // Get all expenses not yet covered by a checkpoint
     const lastRoot = await db.query(
       `SELECT end_expense_id, created_at FROM merkle_roots ORDER BY created_at DESC LIMIT 1`
