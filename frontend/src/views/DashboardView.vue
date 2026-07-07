@@ -17,7 +17,7 @@
         </div>
         <div class="bg-surface border border-border rounded p-5 shadow-sm">
           <p class="text-xs text-text-muted uppercase font-medium mb-1">Total Amount</p>
-          <p class="text-3xl font-bold text-text-main">${{ fmtNum(summary.total_amount) }}</p>
+          <p class="text-3xl font-bold text-text-main">RM {{ fmtNum(summary.total_amount) }}</p>
         </div>
         <div class="bg-yellow-50 border border-yellow-200 rounded p-5 shadow-sm">
           <p class="text-xs text-yellow-600 uppercase font-medium mb-1">Pending</p>
@@ -25,7 +25,7 @@
         </div>
         <div class="bg-green-50 border border-green-200 rounded p-5 shadow-sm">
           <p class="text-xs text-green-600 uppercase font-medium mb-1">Approved ($)</p>
-          <p class="text-3xl font-bold text-green-700">${{ fmtNum(summary.approved_amount) }}</p>
+          <p class="text-3xl font-bold text-green-700">RM {{ fmtNum(summary.approved_amount) }}</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@
               <tr v-for="d in byDept" :key="d.dept_id">
                 <td class="py-2 font-medium text-text-main">{{ d.dept_name }}</td>
                 <td class="py-2 text-right text-text-muted">{{ d.count }}</td>
-                <td class="py-2 text-right font-medium">${{ fmtNum(d.total_amount) }}</td>
+                <td class="py-2 text-right font-medium">RM {{ fmtNum(d.total_amount) }}</td>
                 <td class="py-2 text-center">
                   <span v-if="d.pending > 0" class="bg-yellow-100 text-yellow-700 text-xs px-1.5 py-0.5 rounded-full">{{ d.pending }}</span>
                   <span v-else class="text-text-muted text-xs">—</span>
@@ -100,7 +100,7 @@
             <tr v-for="p in byProject" :key="p.project_id">
               <td class="py-2 font-mono text-text-main">{{ p.project_id }}</td>
               <td class="py-2 text-right text-text-muted">{{ p.count }}</td>
-              <td class="py-2 text-right font-medium">${{ fmtNum(p.total_amount) }}</td>
+              <td class="py-2 text-right font-medium">RM {{ fmtNum(p.total_amount) }}</td>
             </tr>
           </tbody>
         </table>
@@ -136,7 +136,7 @@ const COLORS = {
 
 const PALETTE = ['#6366F1','#8B5CF6','#EC4899','#14B8A6','#F59E0B','#10B981','#3B82F6','#EF4444'];
 
-const fmtNum = (n) => parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtNum = (n) => parseFloat(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 onMounted(async () => {
   const [sumRes, deptRes, catRes, projRes, trendRes] = await Promise.all([

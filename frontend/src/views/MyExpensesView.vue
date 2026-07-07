@@ -56,7 +56,7 @@
               <td class="px-5 py-3 text-text-main">{{ formatDate(exp.created_at) }}</td>
               <td class="px-5 py-3 text-text-main">{{ exp.category }}</td>
               <td class="px-5 py-3 text-text-muted">{{ exp.project_id }}</td>
-              <td class="px-5 py-3 text-right font-medium text-text-main">${{ parseFloat(exp.amount).toFixed(2) }}</td>
+              <td class="px-5 py-3 text-right font-medium text-text-main">RM {{ parseFloat(exp.amount).toFixed(2) }}</td>
               <td class="px-5 py-3 text-center">
                 <span v-if="exp.deleted" class="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-500 line-through">Deleted</span>
                 <span v-else :class="statusClass(exp.status)" class="px-2 py-1 rounded-full text-xs font-medium capitalize">{{ exp.status.replace('_',' ') }}</span>

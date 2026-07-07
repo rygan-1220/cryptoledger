@@ -21,7 +21,7 @@
                 <span v-else :class="statusClass(expense.status)" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mb-1">
                   {{ expense.status.replace('_',' ') }}
                 </span>
-                <p class="text-3xl font-bold text-text-main">${{ parseFloat(expense.amount).toFixed(2) }}</p>
+                <p class="text-3xl font-bold text-text-main">RM {{ parseFloat(expense.amount).toFixed(2) }}</p>
               </div>
               <p class="font-mono text-[10px] text-text-muted text-right shrink-0 select-all leading-relaxed">{{ expense.expense_id }}</p>
             </div>

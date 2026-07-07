@@ -83,7 +83,7 @@
               </div>
               <h3 class="text-xl font-bold text-green-700">Payout Successful</h3>
               <p class="text-sm text-text-muted">
-                ${{ parseFloat(amount).toFixed(2) }} transferred to <strong>{{ employeeName }}</strong>.
+                RM {{ parseFloat(amount).toFixed(2) }} transferred to <strong>{{ employeeName }}</strong>.
               </p>
               <p class="text-xs text-text-muted">Transaction reference: {{ txnRef }}</p>
             </div>
